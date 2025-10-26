@@ -1,0 +1,15 @@
+package xin.bbtt.listeners;
+
+import org.geysermc.mcprotocollib.network.Session;
+import org.geysermc.mcprotocollib.network.event.session.SessionAdapter;
+import org.geysermc.mcprotocollib.network.packet.Packet;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
+import xin.bbtt.world.World;
+
+public class ChunkDataListener extends SessionAdapter {
+    @Override
+    public void packetReceived(Session session, Packet packet) {
+        if (!(packet instanceof ClientboundLevelChunkWithLightPacket levelChunkWithLightPacket)) return;
+        World.Instance.handleLevelChunkAndLightUpdate(levelChunkWithLightPacket);
+    }
+}
