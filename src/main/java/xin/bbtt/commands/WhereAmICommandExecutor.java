@@ -8,6 +8,6 @@ import xin.bbtt.mcbot.command.CommandExecutor;
 public class WhereAmICommandExecutor extends CommandExecutor {
     @Override
     public void onCommand(Command command, String s, String[] strings) {
-        MovementSync.Instance.getLogger().info("You're in {} at ({}, {}, {})", Bot.Instance.getServer(),MovementSync.position.x, MovementSync.position.y, MovementSync.position.z);
+        MovementSync.Instance.getLogger().info("You're in {} at ({}, {}, {})", Bot.Instance.getServer(),MovementSync.Instance.position.x, MovementSync.Instance.position.y, MovementSync.Instance.position.z);
     }
 }

@@ -11,6 +11,6 @@ public class EntityIdRecorder extends SessionAdapter {
     public void packetReceived(Session session, Packet packet) {
         if (!(packet instanceof ClientboundLoginPacket loginPacket)) return;
         MovementSync.Instance.getLogger().info("{}", loginPacket.getEntityId());
-        MovementSync.entityId = loginPacket.getEntityId();
+        MovementSync.Instance.entityId = loginPacket.getEntityId();
     }
 }
