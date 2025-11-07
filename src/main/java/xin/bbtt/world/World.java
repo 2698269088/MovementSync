@@ -57,17 +57,17 @@ public class World {
         else {
             chunkY = (int)Math.floor(position.y / 16);
         }
-        if (!chunks.containsKey(chunkX)) return -1;
+        if (!chunks.containsKey(chunkX)) return 0;
         Map<Integer, List<ChunkSection>> xChunks = chunks.get(chunkX);
-        if (!xChunks.containsKey(chunkZ)) return-1;
+        if (!xChunks.containsKey(chunkZ)) return 0;
         List<ChunkSection> zChunks = xChunks.get(chunkZ);
-        if (chunkY >= zChunks.size()) return -1;
+        if (chunkY >= zChunks.size()) return 0;
         ChunkSection section = zChunks.get(chunkY);
         try {
-            return section.getBlock((int)position.x & 15, (int)position.y & 15, (int)position.z & 15);
+            return section.getBlock((int)Math.floor(position.x) & 15, (int)Math.floor(position.y) & 15, (int)Math.floor(position.z) & 15);
         }
         catch (IndexOutOfBoundsException e) {
-            return -2;
+            return 0;
         }
     }
 }

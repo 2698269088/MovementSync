@@ -21,5 +21,6 @@ public class TeleportPacketListener extends SessionAdapter {
         if (teleportEvent.isDefaultActionCancelled()) return;
         MovementSync.Instance.position.set(position);
         session.send(new ServerboundAcceptTeleportationPacket(playerPositionPacket.getTeleportId()));
+        MovementSync.Instance.velocity.set(new Vector3d());
     }
 }

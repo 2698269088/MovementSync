@@ -1,6 +1,8 @@
 package xin.bbtt;
 
+import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerAction;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerPosPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPlayerActionPacket;
 import org.joml.Vector3d;
 import xin.bbtt.commands.JumpCommand;
 import xin.bbtt.commands.JumpCommandExecutor;
@@ -15,6 +17,7 @@ import xin.bbtt.mcbot.Server;
 import xin.bbtt.mcbot.plugin.Plugin;
 import xin.bbtt.world.World;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class MovementSync implements Plugin {
@@ -24,7 +27,7 @@ public class MovementSync implements Plugin {
     public AtomicReference<Vector3d> velocity = new AtomicReference<>();
     public static final Vector3d gravitationalAcceleration = new Vector3d(0, -0.08, 0);
     public static final double terminalVelocity = -3.92;
-    public boolean onGround;
+    public AtomicBoolean onGround = new AtomicBoolean(true);
     private Thread physicalSimulation;
 
     public MovementSync() {
@@ -84,34 +87,47 @@ public class MovementSync implements Plugin {
 
     public void checkOnGround() {
         Vector3d position = new Vector3d(this.position.get());
+        getLogger().info("Checking onGround: ({}, {}, {}), {}", position.x, position.y, position.z, World.Instance.getBlockAt(position));
+        if (Math.abs(position.y - Math.round(position.y)) < 0.03 && World.Instance.getBlockAt(position) != 0) {
+            onGround.set(true);
+            return;
+        }
         if (World.Instance.getBlockAt(position) != 0) {
-            onGround = true;
+            onGround.set(true);
             position.y = Math.round(position.y);
             this.position.set(position);
             return;
         }
-        onGround = false;
+        onGround.set(false);
     }
 
     public void updateMotionState() {
-        if (velocity.get().y > terminalVelocity) {
-            velocity.updateAndGet(v -> new Vector3d(v).add(gravitationalAcceleration));
+        Vector3d velocity = this.velocity.get();
+        if (velocity.y > terminalVelocity) {
+            velocity.add(gravitationalAcceleration);
+        } else if (velocity.y < 0) {
+            velocity.y = terminalVelocity;
         }
-        if (onGround && velocity.get().y < 0) {
-            Vector3d newVelocity = velocity.get();
-            newVelocity.y = 0;
-            velocity.set(newVelocity);
+        if (onGround.get() && velocity.y < 0) {
+            velocity.y = 0;
         }
-        position.updateAndGet(p -> new Vector3d(p).add(velocity.get()));
+        velocity.y *= 0.98;
+        Vector3d position = new Vector3d(this.position.get());
+        Vector3d displacement = new Vector3d(this.velocity.get());
+        displacement.add(gravitationalAcceleration.div(2));
+        position.add(displacement);
+        this.velocity.set(velocity);
+        this.position.set(position);
     }
 
     public void syncPositionToServer() {
-        Bot.Instance.getSession().send(new ServerboundMovePlayerPosPacket(onGround, position.get().x, position.get().y, position.get().z));
-        getLogger().info("Sync position to server: ({}, {}, {}, {})", onGround, position.get().x, position.get().y, position.get().z);
+        Bot.Instance.getSession().send(new ServerboundMovePlayerPosPacket(onGround.get(), position.get().x, position.get().y, position.get().z));
+        getLogger().info("Synced position to server: ({}, {}, {}, {}), vertical velocity: {}b/t", onGround, position.get().x, position.get().y, position.get().z, velocity.get().y);
     }
 
     public void jump() {
-        if (onGround) {
+        if (onGround.get()) {
+            MovementSync.Instance.getLogger().info("jumping");
             velocity.updateAndGet(p -> new Vector3d(p).add(new Vector3d(0, 0.42, 0)));
         }
     }

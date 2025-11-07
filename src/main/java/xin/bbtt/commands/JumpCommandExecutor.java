@@ -7,7 +7,6 @@ import xin.bbtt.mcbot.command.CommandExecutor;
 public class JumpCommandExecutor extends CommandExecutor {
     @Override
     public void onCommand(Command command, String s, String[] strings) {
-        MovementSync.Instance.getLogger().info("jumping");
         MovementSync.Instance.jump();
     }
 }
