@@ -2,6 +2,8 @@ package xin.bbtt;
 
 import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerPosPacket;
 import org.joml.Vector3d;
+import xin.bbtt.commands.JumpCommand;
+import xin.bbtt.commands.JumpCommandExecutor;
 import xin.bbtt.commands.WhereAmICommand;
 import xin.bbtt.commands.WhereAmICommandExecutor;
 import xin.bbtt.listeners.ChunkDataListener;
@@ -13,11 +15,13 @@ import xin.bbtt.mcbot.Server;
 import xin.bbtt.mcbot.plugin.Plugin;
 import xin.bbtt.world.World;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 public class MovementSync implements Plugin {
     public static MovementSync Instance;
     public int entityId = -1;
-    public Vector3d position = new Vector3d();
-    public Vector3d velocity = new Vector3d();
+    public AtomicReference<Vector3d> position = new AtomicReference<>();
+    public AtomicReference<Vector3d> velocity = new AtomicReference<>();
     public static final Vector3d gravitationalAcceleration = new Vector3d(0, -0.08, 0);
     public static final double terminalVelocity = -3.92;
     public boolean onGround;
@@ -40,12 +44,16 @@ public class MovementSync implements Plugin {
     @Override
     public void onEnable() {
         getLogger().info("Enabling MovementSync");
+        position.set(new Vector3d(0, 0, 0));
+        velocity.set(new Vector3d(0, 0, 0));
+
         Bot.Instance.addPacketListener(new TeleportPacketListener(), this);
         Bot.Instance.addPacketListener(new EntityIdRecorder(), this);
         Bot.Instance.addPacketListener(new RespawnPacketListener(), this);
         Bot.Instance.addPacketListener(new ChunkDataListener(), this);
 
         Bot.Instance.getPluginManager().registerCommand(new WhereAmICommand(), new WhereAmICommandExecutor(),  this);
+        Bot.Instance.getPluginManager().registerCommand(new JumpCommand(), new JumpCommandExecutor(),  this);
 
         physicalSimulation = new Thread(this::physicalSimulation);
         physicalSimulation.start();
@@ -59,10 +67,10 @@ public class MovementSync implements Plugin {
 
     public void physicalSimulation() {
         while (Bot.Instance.isRunning()) {
-            Vector3d lastPos = new Vector3d(position);
-            this.checkOnGround();
+            Vector3d lastPos = new Vector3d(position.get());
             this.updateMotionState();
-            if (!lastPos.equals(position) && Bot.Instance.getServer() == Server.Xin) {
+            this.checkOnGround();
+            if (!lastPos.equals(position.get()) && Bot.Instance.getServer() == Server.Xin) {
                 this.syncPositionToServer();
             }
             try {
@@ -75,35 +83,36 @@ public class MovementSync implements Plugin {
     }
 
     public void checkOnGround() {
-        if (position.y -  Math.floor(position.y) > 0.5d) {
-            onGround = false;
-            return;
-        }
+        Vector3d position = new Vector3d(this.position.get());
         if (World.Instance.getBlockAt(position) != 0) {
-            position.y = Math.floor(position.y) + 0.5d;
             onGround = true;
+            position.y = Math.round(position.y);
+            this.position.set(position);
             return;
         }
         onGround = false;
     }
 
     public void updateMotionState() {
-        if (velocity.y > terminalVelocity) {
-            velocity.add(gravitationalAcceleration);
+        if (velocity.get().y > terminalVelocity) {
+            velocity.updateAndGet(v -> new Vector3d(v).add(gravitationalAcceleration));
         }
-        if (onGround && velocity.y < 0) {
-            velocity.y = 0;
+        if (onGround && velocity.get().y < 0) {
+            Vector3d newVelocity = velocity.get();
+            newVelocity.y = 0;
+            velocity.set(newVelocity);
         }
-        position.add(velocity);
+        position.updateAndGet(p -> new Vector3d(p).add(velocity.get()));
     }
 
     public void syncPositionToServer() {
-        Bot.Instance.getSession().send(new ServerboundMovePlayerPosPacket(onGround, position.x, position.y, position.z));
+        Bot.Instance.getSession().send(new ServerboundMovePlayerPosPacket(onGround, position.get().x, position.get().y, position.get().z));
+        getLogger().info("Sync position to server: ({}, {}, {}, {})", onGround, position.get().x, position.get().y, position.get().z);
     }
 
     public void jump() {
         if (onGround) {
-            velocity.add(new Vector3d(0, 0.021, 0));
+            velocity.updateAndGet(p -> new Vector3d(p).add(new Vector3d(0, 0.42, 0)));
         }
     }
 }

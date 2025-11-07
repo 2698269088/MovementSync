@@ -37,18 +37,20 @@ public class World {
         if (!chunks.containsKey(sectionBlocksUpdatePacket.getChunkX())) return;
         Map<Integer, List<ChunkSection>> xChunks = chunks.get(sectionBlocksUpdatePacket.getChunkX());
         if (!xChunks.containsKey(sectionBlocksUpdatePacket.getChunkZ())) return;
-        List<ChunkSection> section = xChunks.get(sectionBlocksUpdatePacket.getChunkZ());
+        List<ChunkSection> sections = xChunks.get(sectionBlocksUpdatePacket.getChunkZ());
+        ChunkSection section = sections.get(sectionBlocksUpdatePacket.getChunkY());
         Arrays.stream(sectionBlocksUpdatePacket.getEntries()).forEach(entry -> {
-             int relativeX = entry.getPosition().getX() & 15;
-             int relativeZ = entry.getPosition().getZ() & 15;
-             int relativeY = entry.getPosition().getY() & 15;
+            int relativeX = entry.getPosition().getX() & 15;
+            int relativeZ = entry.getPosition().getZ() & 15;
+            int relativeY = entry.getPosition().getY() & 15;
+            section.setBlock(relativeX, relativeY, relativeZ, entry.getBlock());
         });
     }
 
     public int getBlockAt(Vector3d position) {
         int chunkX = (int)Math.floor(position.x / 16);
         int chunkZ = (int)Math.floor(position.z / 16);
-        int chunkY = 0;
+        int chunkY;
         if (Bot.Instance.getServer() == Server.Xin) {
             chunkY = ((int)Math.floor(position.y + 64) / 16);
         }
