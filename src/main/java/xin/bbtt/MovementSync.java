@@ -1,5 +1,6 @@
 package xin.bbtt;
 
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerPosPacket;
 import org.joml.Vector3d;
 import xin.bbtt.commands.WhereAmICommand;
 import xin.bbtt.commands.WhereAmICommandExecutor;
@@ -8,6 +9,7 @@ import xin.bbtt.listeners.EntityIdRecorder;
 import xin.bbtt.listeners.RespawnPacketListener;
 import xin.bbtt.listeners.TeleportPacketListener;
 import xin.bbtt.mcbot.Bot;
+import xin.bbtt.mcbot.Server;
 import xin.bbtt.mcbot.plugin.Plugin;
 import xin.bbtt.world.World;
 
@@ -57,8 +59,12 @@ public class MovementSync implements Plugin {
 
     public void physicalSimulation() {
         while (Bot.Instance.isRunning()) {
+            Vector3d lastPos = new Vector3d(position);
             this.checkOnGround();
             this.updateMotionState();
+            if (!lastPos.equals(position) && Bot.Instance.getServer() == Server.Xin) {
+                this.syncPositionToServer();
+            }
             try {
                 Thread.sleep(50L);
             } catch (InterruptedException e) {
@@ -69,8 +75,16 @@ public class MovementSync implements Plugin {
     }
 
     public void checkOnGround() {
-        Vector3d bottomBlock = new Vector3d(position).add(0, -1, 0);
-        onGround = World.Instance.getBlockAt(bottomBlock) != 0;
+        if (position.y -  Math.floor(position.y) > 0.5d) {
+            onGround = false;
+            return;
+        }
+        if (World.Instance.getBlockAt(position) != 0) {
+            position.y = Math.floor(position.y) + 0.5d;
+            onGround = true;
+            return;
+        }
+        onGround = false;
     }
 
     public void updateMotionState() {
@@ -81,5 +95,9 @@ public class MovementSync implements Plugin {
             velocity.y = 0;
         }
         position.add(velocity);
+    }
+
+    public void syncPositionToServer() {
+        Bot.Instance.getSession().send(new ServerboundMovePlayerPosPacket(onGround, position.x, position.y, position.z));
     }
 }

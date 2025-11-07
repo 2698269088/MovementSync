@@ -8,16 +8,16 @@ import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.Clien
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSectionBlocksUpdatePacket;
 import org.joml.Vector3d;
 import xin.bbtt.MovementSync;
+import xin.bbtt.mcbot.Bot;
+import xin.bbtt.mcbot.Server;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class World {
     public final static World Instance = new World();
     private World() {}
-    private final Map<Integer, Map<Integer, ChunkSection>> chunks = new ConcurrentHashMap<>();
+    private final Map<Integer, Map<Integer, List<ChunkSection>>> chunks = new ConcurrentHashMap<>();
 
     public void handleLevelChunkAndLightUpdate(ClientboundLevelChunkWithLightPacket levelChunkWithLightPacket) {
         if (!chunks.containsKey(levelChunkWithLightPacket.getX())) {
@@ -25,33 +25,44 @@ public class World {
         }
         ByteBuf chunkBuf = Unpooled.wrappedBuffer(levelChunkWithLightPacket.getChunkData());
         MinecraftCodecHelper helper = new MinecraftCodecHelper();
-        ChunkSection section = helper.readChunkSection(chunkBuf);
-        chunks.get(levelChunkWithLightPacket.getX()).put(levelChunkWithLightPacket.getZ(), section);
-        MovementSync.Instance.getLogger().info("({}, {})", levelChunkWithLightPacket.getX(), levelChunkWithLightPacket.getZ());
+        List<ChunkSection> sections = new ArrayList<>();
+        ChunkSection section;
+        while (chunkBuf.isReadable() && (section = helper.readChunkSection(chunkBuf)) != null) {
+            sections.add(section);
+        }
+        chunks.get(levelChunkWithLightPacket.getX()).put(levelChunkWithLightPacket.getZ(), sections);
     }
 
     public void handleSectionBlocksUpdatePacket(ClientboundSectionBlocksUpdatePacket sectionBlocksUpdatePacket) {
         if (!chunks.containsKey(sectionBlocksUpdatePacket.getChunkX())) return;
-        Map<Integer, ChunkSection> xChunks = chunks.get(sectionBlocksUpdatePacket.getChunkX());
+        Map<Integer, List<ChunkSection>> xChunks = chunks.get(sectionBlocksUpdatePacket.getChunkX());
         if (!xChunks.containsKey(sectionBlocksUpdatePacket.getChunkZ())) return;
-        ChunkSection section = xChunks.get(sectionBlocksUpdatePacket.getChunkZ());
+        List<ChunkSection> section = xChunks.get(sectionBlocksUpdatePacket.getChunkZ());
         Arrays.stream(sectionBlocksUpdatePacket.getEntries()).forEach(entry -> {
              int relativeX = entry.getPosition().getX() & 15;
              int relativeZ = entry.getPosition().getZ() & 15;
-            MovementSync.Instance.getLogger().info("({}, {}, {}), {}", relativeX, entry.getPosition().getY(), relativeZ, entry.getBlock());
+             int relativeY = entry.getPosition().getY() & 15;
         });
     }
 
     public int getBlockAt(Vector3d position) {
         int chunkX = (int)Math.floor(position.x / 16);
         int chunkZ = (int)Math.floor(position.z / 16);
-        // MovementSync.Instance.getLogger().info("({}, {})", chunkX, chunkZ);
+        int chunkY = 0;
+        if (Bot.Instance.getServer() == Server.Xin) {
+            chunkY = ((int)Math.floor(position.y + 64) / 16);
+        }
+        else {
+            chunkY = (int)Math.floor(position.y / 16);
+        }
         if (!chunks.containsKey(chunkX)) return -1;
-        Map<Integer, ChunkSection> xChunks = chunks.get(chunkX);
+        Map<Integer, List<ChunkSection>> xChunks = chunks.get(chunkX);
         if (!xChunks.containsKey(chunkZ)) return-1;
-        ChunkSection section = xChunks.get(chunkZ);
+        List<ChunkSection> zChunks = xChunks.get(chunkZ);
+        if (chunkY >= zChunks.size()) return -1;
+        ChunkSection section = zChunks.get(chunkY);
         try {
-            return section.getBlock((int)position.x & 15, (int)position.y, (int)position.z & 15);
+            return section.getBlock((int)position.x & 15, (int)position.y & 15, (int)position.z & 15);
         }
         catch (IndexOutOfBoundsException e) {
             return -2;
