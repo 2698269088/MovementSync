@@ -91,7 +91,7 @@ public class MovementSync implements Plugin {
         if (velocity.y > terminalVelocity) {
             velocity.add(gravitationalAcceleration);
         }
-        if (onGround) {
+        if (onGround && velocity.y < 0) {
             velocity.y = 0;
         }
         position.add(velocity);
