@@ -100,4 +100,10 @@ public class MovementSync implements Plugin {
     public void syncPositionToServer() {
         Bot.Instance.getSession().send(new ServerboundMovePlayerPosPacket(onGround, position.x, position.y, position.z));
     }
+
+    public void jump() {
+        if (onGround) {
+            velocity.add(new Vector3d(0, 0.021, 0));
+        }
+    }
 }
