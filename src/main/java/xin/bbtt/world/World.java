@@ -38,7 +38,13 @@ public class World {
         Map<Integer, List<ChunkSection>> xChunks = chunks.get(sectionBlocksUpdatePacket.getChunkX());
         if (!xChunks.containsKey(sectionBlocksUpdatePacket.getChunkZ())) return;
         List<ChunkSection> sections = xChunks.get(sectionBlocksUpdatePacket.getChunkZ());
-        ChunkSection section = sections.get(sectionBlocksUpdatePacket.getChunkY());
+        ChunkSection section;
+        if (Bot.Instance.getServer() == Server.Xin) {
+            section = sections.get(sectionBlocksUpdatePacket.getChunkY() + 4);
+        }
+        else {
+            section = sections.get(sectionBlocksUpdatePacket.getChunkY());
+        }
         Arrays.stream(sectionBlocksUpdatePacket.getEntries()).forEach(entry -> {
             int relativeX = entry.getPosition().getX() & 15;
             int relativeZ = entry.getPosition().getZ() & 15;
