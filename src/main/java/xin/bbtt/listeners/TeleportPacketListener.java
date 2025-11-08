@@ -12,7 +12,7 @@ import xin.bbtt.mcbot.Bot;
 
 public class TeleportPacketListener extends SessionAdapter {
     @Override
-    public void packetReceived(Session session, Packet packet) {
+    public synchronized void packetReceived(Session session, Packet packet) {
         if (!(packet instanceof ClientboundPlayerPositionPacket playerPositionPacket)) return;
         MovementSync.Instance.getLogger().info("({}, {}, {})", playerPositionPacket.getX(), playerPositionPacket.getY(), playerPositionPacket.getZ());
         Vector3d position = new Vector3d(playerPositionPacket.getX(), playerPositionPacket.getY(), playerPositionPacket.getZ());
@@ -22,5 +22,6 @@ public class TeleportPacketListener extends SessionAdapter {
         MovementSync.Instance.position.set(position);
         session.send(new ServerboundAcceptTeleportationPacket(playerPositionPacket.getTeleportId()));
         MovementSync.Instance.velocity.set(new Vector3d());
+        MovementSync.Instance.checkOnGround();
     }
 }
