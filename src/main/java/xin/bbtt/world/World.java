@@ -7,7 +7,6 @@ import org.geysermc.mcprotocollib.protocol.data.game.chunk.ChunkSection;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSectionBlocksUpdatePacket;
 import org.joml.Vector3d;
-import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.Bot;
 import xin.bbtt.mcbot.Server;
 
@@ -67,7 +66,7 @@ public class World {
         Map<Integer, List<ChunkSection>> xChunks = chunks.get(chunkX);
         if (!xChunks.containsKey(chunkZ)) return 0;
         List<ChunkSection> zChunks = xChunks.get(chunkZ);
-        if (chunkY >= zChunks.size()) return 0;
+        if (chunkY >= zChunks.size() || chunkY < 0) return 0;
         ChunkSection section = zChunks.get(chunkY);
         try {
             return section.getBlock((int)Math.floor(position.x) & 15, (int)Math.floor(position.y) & 15, (int)Math.floor(position.z) & 15);

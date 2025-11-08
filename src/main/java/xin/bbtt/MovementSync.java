@@ -1,8 +1,6 @@
 package xin.bbtt;
 
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerAction;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerPosPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPlayerActionPacket;
 import org.joml.Vector3d;
 import xin.bbtt.commands.JumpCommand;
 import xin.bbtt.commands.JumpCommandExecutor;
@@ -68,21 +66,41 @@ public class MovementSync implements Plugin {
     }
 
     public void physicalSimulation() {
+        final long interval = 50_000_000L;
+        long nextTick = System.nanoTime();
+
         while (Bot.Instance.isRunning() && !Thread.currentThread().isInterrupted()) {
-            if (Bot.Instance.getServer() != Server.Xin) continue;
-            Vector3d lastPos = new Vector3d(position.get());
-            this.updateMotionState();
-            this.checkOnGround();
-            if (!lastPos.equals(position.get()) && Bot.Instance.getServer() == Server.Xin) {
-                this.syncPositionToServer();
+            if (Bot.Instance.getServer() != Server.Xin) {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    break;
+                }
+                continue;
             }
-            try {
-                Thread.sleep(50L);
-            } catch (InterruptedException e) {
-                break;
+
+            Vector3d lastPos = new Vector3d(position.get());
+            updateMotionState();
+            checkOnGround();
+            if (!lastPos.equals(position.get()) && Bot.Instance.getServer() == Server.Xin) {
+                syncPositionToServer();
+            }
+
+            nextTick += interval;
+            long sleepTime = (nextTick - System.nanoTime()) / 1_000_000L;
+
+            if (sleepTime > 0) {
+                try {
+                    Thread.sleep(sleepTime);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            } else {
+                nextTick = System.nanoTime();
             }
         }
     }
+
 
     public void checkOnGround() {
         Vector3d position = new Vector3d(this.position.get());
