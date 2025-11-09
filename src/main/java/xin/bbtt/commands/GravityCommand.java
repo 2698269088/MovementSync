@@ -2,25 +2,25 @@ package xin.bbtt.commands;
 
 import xin.bbtt.mcbot.command.Command;
 
-public class JumpCommand extends Command {
+public class GravityCommand extends Command {
     
     @Override
     public String getName() {
-        return "jump";
+        return "gravity";
     }
     
     @Override
     public String[] getAliases() {
-        return new String[] {"jump", "j"};
+        return new String[] {"gravity", "grav", "gravtoggle"};
     }
     
     @Override
     public String getDescription() {
-        return "Make the bot jump";
+        return "Toggle gravity for the bot";
     }
     
     @Override
     public String getUsage() {
-        return "jump";
+        return "gravity [on|off]";
     }
 }

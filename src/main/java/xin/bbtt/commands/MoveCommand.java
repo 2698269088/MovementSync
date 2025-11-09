@@ -2,25 +2,25 @@ package xin.bbtt.commands;
 
 import xin.bbtt.mcbot.command.Command;
 
-public class JumpCommand extends Command {
+public class MoveCommand extends Command {
     
     @Override
     public String getName() {
-        return "jump";
+        return "move";
     }
     
     @Override
     public String[] getAliases() {
-        return new String[] {"jump", "j"};
+        return new String[] {"move", "mv", "walk"};
     }
     
     @Override
     public String getDescription() {
-        return "Make the bot jump";
+        return "Move the bot in a specified direction";
     }
     
     @Override
     public String getUsage() {
-        return "jump";
+        return "move <direction> [distance]";
     }
 }

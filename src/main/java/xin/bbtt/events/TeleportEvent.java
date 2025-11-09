@@ -1,6 +1,7 @@
 package xin.bbtt.events;
 
 import lombok.Getter;
+import net.kyori.adventure.text.Component;
 import org.joml.Vector3d;
 import xin.bbtt.mcbot.event.Event;
 import xin.bbtt.mcbot.event.HandlerList;
