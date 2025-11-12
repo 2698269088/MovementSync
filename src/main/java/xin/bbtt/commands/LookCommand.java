@@ -2,24 +2,24 @@ package xin.bbtt.commands;
 
 import xin.bbtt.mcbot.command.Command;
 
-public class MoveCommand extends Command {
+public class LookCommand extends Command {
     @Override
     public String getName() {
-        return "move";
+        return "look";
     }
 
     @Override
     public String[] getAliases() {
-        return new String[]{"move", "m", "w", "a", "s", "d"};
+        return new String[]{"look", "rotate", "yaw"};
     }
 
     @Override
     public String getDescription() {
-        return "Move the bot in a direction with MCC physics";
+        return "Set the bot's yaw rotation (0-360 degrees)";
     }
 
     @Override
     public String getUsage() {
-        return "move <forward|back|left|right> [steps]";
+        return "look <yaw>";
     }
 }

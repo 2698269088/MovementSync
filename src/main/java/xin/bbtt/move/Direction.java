@@ -1,36 +1,36 @@
 package xin.bbtt.move;
 
+import org.joml.Vector3d;
+
 /**
- * 移动方向枚举
+ * 移动方向枚举，包含方向向量
  */
 public enum Direction {
-    UP(0, 1, 0),
-    DOWN(0, -1, 0),
-    NORTH(0, 0, -1),
-    SOUTH(0, 0, 1),
-    WEST(-1, 0, 0),
-    EAST(1, 0, 0);
-    
-    public final int x, y, z;
-    
-    Direction(int x, int y, int z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
+    Down(0, -1, 0),
+    Up(0, 1, 0),
+    East(1, 0, 0),
+    West(-1, 0, 0),
+    South(0, 0, 1),
+    North(0, 0, -1),
+    NorthEast(1, 0, -1),
+    SouthEast(1, 0, 1),
+    SouthWest(-1, 0, 1),
+    NorthWest(-1, 0, -1);
+
+    private final Vector3d vector;
+
+    Direction(double x, double y, double z) {
+        this.vector = new Vector3d(x, y, z);
     }
-    
+
+    public Vector3d getVector() {
+        return new Vector3d(vector);
+    }
+
     /**
-     * 获取相反方向
-     * @return 相反方向
+     * 获取水平方向（用于玩家移动）
      */
-    public Direction getOpposite() {
-        return switch (this) {
-            case UP -> DOWN;
-            case DOWN -> UP;
-            case NORTH -> SOUTH;
-            case SOUTH -> NORTH;
-            case WEST -> EAST;
-            case EAST -> WEST;
-        };
+    public static Direction[] getHorizontalDirections() {
+        return new Direction[]{East, West, South, North};
     }
 }
