@@ -4,6 +4,7 @@ import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.Serv
 import org.joml.Vector3d;
 import xin.bbtt.commands.*;
 import xin.bbtt.listeners.*;
+import xin.bbtt.move.Direction;
 import xin.bbtt.move.MovementHelper;
 import xin.bbtt.mcbot.Bot;
 import xin.bbtt.mcbot.Server;
@@ -35,6 +36,7 @@ public class MovementSync implements Plugin {
     private Queue<MoveCommandExecutor.MoveRequest> moveQueue = new ConcurrentLinkedQueue<>();
     private MoveCommandExecutor.MoveRequest currentMoveRequest = null;
     private int moveStepsCompleted = 0;
+    private boolean shouldJump = false; // 标记是否需要跳跃
 
     public float yaw = 90.0f; // 默认朝东（90度），可根据需要调整
     private final AtomicReference<Vector3d> targetLook = new AtomicReference<>(new Vector3d());
@@ -162,6 +164,20 @@ public class MovementSync implements Plugin {
         double moveSpeed = 0.2; // 基本移动速度
         newVelocity.x = directionVector.x * moveSpeed;
         newVelocity.z = directionVector.z * moveSpeed;
+        
+        // 检查前方是否有障碍物，如果有则准备跳跃
+        if (MovementHelper.willCollide(World.Instance, position.get(), currentMoveRequest.direction) && onGround.get()) {
+            shouldJump = true;
+            getLogger().debug("Will collide, preparing to jump");
+        }
+        
+        // 如果需要跳跃且在地面上，则跳跃
+        if (shouldJump && onGround.get()) {
+            newVelocity.y = 0.42; // Minecraft跳跃初速度
+            onGround.set(false);
+            shouldJump = false;
+            getLogger().info("Jumping over obstacle!");
+        }
         
         // 如果是向上移动且在地面上，则跳跃
         if (directionVector.y > 0 && onGround.get()) {

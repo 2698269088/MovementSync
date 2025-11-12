@@ -28,6 +28,15 @@ public class Block {
     }
 
     /**
+     * 判断是否为顶部半砖
+     */
+    public boolean isTopSlab() {
+        // 简化实现 - 实际需要根据具体方块类型判断
+        // 这里仅作示意，实际应根据方块状态判断
+        return material == Material.StoneSlab || material == Material.OakSlab;
+    }
+
+    /**
      * 根据方块ID解析材料类型
      * TODO: 根据实际服务器版本完善映射表
      */
@@ -43,6 +52,8 @@ public class Block {
             case 106 -> Material.Vine;
             case 51 -> Material.Fire;
             case 81 -> Material.Cactus;
+            case 44 -> Material.StoneSlab; // 石半砖
+            case 126 -> Material.OakSlab;  // 橡木半砖
             default -> Material.Unknown;
         };
     }

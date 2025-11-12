@@ -71,6 +71,90 @@ public class MovementHelper {
         return type.isSolid() || type.canBeClimbedOn();
     }
 
+    /**
+     * 检查是否可以朝指定方向移动
+     */
+    public static boolean canMove(World world, Vector3d location, Direction direction) {
+        switch (direction) {
+            // 垂直移动
+            case Down:
+                return isClimbing(world, move(location, Direction.Down)) || !isOnGround(world, location);
+            case Up:
+                boolean nextTwoBlocks = !getBlock(world, move(move(location, Direction.Up), Direction.Up)).getType().isSolid();
+                
+                // 检查当前方块是否可以攀爬
+                if (isClimbing(world, location))
+                    // 检查下一个方块是否可以攀爬
+                    return isClimbing(world, move(location, Direction.Up)) || nextTwoBlocks;
+                
+                return (isOnGround(world, location) || isSwimming(world, location)) && nextTwoBlocks;
+
+            // 水平移动
+            case East:
+            case West:
+            case South:
+            case North:
+                return playerFitsHere(world, move(location, direction));
+
+            // 对角移动
+            case NorthEast:
+                return playerFitsHere(world, move(location, Direction.North)) &&
+                       playerFitsHere(world, move(location, Direction.East)) &&
+                       playerFitsHere(world, move(location, direction));
+            case SouthEast:
+                return playerFitsHere(world, move(location, Direction.South)) &&
+                       playerFitsHere(world, move(location, Direction.East)) &&
+                       playerFitsHere(world, move(location, direction));
+            case SouthWest:
+                return playerFitsHere(world, move(location, Direction.South)) &&
+                       playerFitsHere(world, move(location, Direction.West)) &&
+                       playerFitsHere(world, move(location, direction));
+            case NorthWest:
+                return playerFitsHere(world, move(location, Direction.North)) &&
+                       playerFitsHere(world, move(location, Direction.West)) &&
+                       playerFitsHere(world, move(location, direction));
+
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * 检查玩家是否可以在指定位置站立（不会卡住）
+     */
+    public static boolean playerFitsHere(World world, Vector3d location) {
+        boolean canClimb = isClimbing(world, location) && isClimbing(world, move(location, Direction.Up));
+        boolean isNotSolid = !getBlock(world, location).getType().isSolid() &&
+                             !getBlock(world, move(location, Direction.Up)).getType().isSolid();
+        
+        // 处理半砖
+        if (!isNotSolid && getBlock(world, move(location, Direction.Up)).isTopSlab()) {
+            isNotSolid = true;
+        }
+        
+        return canClimb || isNotSolid;
+    }
+
+    /**
+     * 检查前方是否有障碍物阻挡移动
+     */
+    public static boolean willCollide(World world, Vector3d position, Direction direction) {
+        Vector3d target = move(position, direction);
+        Vector3d eyePosition = new Vector3d(position.x, position.y + 1.62, position.z); // 眼睛高度
+        Vector3d targetEye = new Vector3d(target.x, target.y + 1.62, target.z);
+        
+        // 检查眼睛高度是否有障碍物
+        if (!playerFitsHere(world, targetEye)) {
+            return true;
+        }
+        
+        // 检查脚下是否有障碍物
+        if (!playerFitsHere(world, target)) {
+            return true;
+        }
+        
+        return false;
+    }
 
     // ==================== 工具方法 ====================
 
