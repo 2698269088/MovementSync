@@ -22,6 +22,11 @@ public class World {
     public static boolean isOnGround(Vector3d position) {
         Vector3d bottomBlockPos = new Vector3d(position).floor().add(Direction.DOWN.getUnitVector());
 
+        if (position.y > (int)position.y + 0.0001) {
+            bottomBlockPos = position;
+            bottomBlockPos.y = (int)position.y;
+        }
+
         if (World.Instance.getBlockAt(bottomBlockPos) != 0){
             return true;
         }

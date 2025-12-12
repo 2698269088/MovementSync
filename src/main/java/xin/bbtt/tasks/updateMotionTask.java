@@ -41,7 +41,7 @@ public class updateMotionTask implements Runnable {
             if (!MovementSync.Instance.onGround.get()) velocity.add(gravitationalAcceleration);
             velocity.y *= 0.9800000190734863D;
             displacement.add(MovementSync.Instance.velocity.get());
-            displacement.add(new Vector3d(gravitationalAcceleration).div(2));
+            if (!MovementSync.Instance.onGround.get()) displacement.add(new Vector3d(gravitationalAcceleration).div(2));
         } else if (velocity.y < 0) {
             velocity.y = terminalVelocity;
             displacement.add(MovementSync.Instance.velocity.get().add(velocity).div(2));
