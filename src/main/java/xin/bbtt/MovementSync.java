@@ -8,7 +8,7 @@ import xin.bbtt.commands.WhereAmICommandExecutor;
 import xin.bbtt.listeners.*;
 import xin.bbtt.mcbot.Bot;
 import xin.bbtt.mcbot.plugin.Plugin;
-import xin.bbtt.tasks.updateMotion;
+import xin.bbtt.tasks.updateMotionTask;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -57,7 +57,7 @@ public class MovementSync implements Plugin {
         Bot.Instance.getPluginManager().events().registerEvents(new ServerChangeListener(),  this);
 
         physicalSimulationService = Executors.newScheduledThreadPool(1);
-        physicalSimulationService.scheduleAtFixedRate(new updateMotion(), 0, 50, TimeUnit.MILLISECONDS);
+        physicalSimulationService.scheduleAtFixedRate(new updateMotionTask(), 0, 50, TimeUnit.MILLISECONDS);
     }
 
     @Override

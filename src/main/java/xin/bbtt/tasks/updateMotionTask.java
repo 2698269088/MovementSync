@@ -10,7 +10,7 @@ import xin.bbtt.world.World;
 import static xin.bbtt.MovementSync.gravitationalAcceleration;
 import static xin.bbtt.MovementSync.terminalVelocity;
 
-public class updateMotion implements Runnable {
+public class updateMotionTask implements Runnable {
 
     public void syncPositionToServer() {
         Bot.Instance.getSession().send(new ServerboundMovePlayerPosPacket(MovementSync.Instance.onGround.get(), MovementSync.Instance.position.get().x, MovementSync.Instance.position.get().y, MovementSync.Instance.position.get().z));
