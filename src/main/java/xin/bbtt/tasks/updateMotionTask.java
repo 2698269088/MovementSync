@@ -32,9 +32,8 @@ public class updateMotionTask implements Runnable {
         Vector3d displacement = new Vector3d();
 
         checkOnGround();
-        if(MovementSync.Instance.onGround.get()) {
+        if(MovementSync.Instance.onGround.get() && velocity.y < 0) {
             velocity.y = 0;
-            displacement.y = 0;
         }
 
         if (velocity.y > terminalVelocity) {
