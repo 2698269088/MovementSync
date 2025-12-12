@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.geysermc.mcprotocollib.protocol.codec.MinecraftCodecHelper;
 import org.geysermc.mcprotocollib.protocol.data.game.chunk.ChunkSection;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundForgetLevelChunkPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSectionBlocksUpdatePacket;
 import org.joml.Vector3d;
@@ -17,6 +18,10 @@ public class World {
     public final static World Instance = new World();
     private World() {}
     private final Map<Integer, Map<Integer, List<ChunkSection>>> chunks = new ConcurrentHashMap<>();
+
+    public void clear(){
+        chunks.clear();
+    }
 
     public void handleLevelChunkAndLightUpdate(ClientboundLevelChunkWithLightPacket levelChunkWithLightPacket) {
         if (!chunks.containsKey(levelChunkWithLightPacket.getX())) {
@@ -52,6 +57,12 @@ public class World {
         });
     }
 
+    public void handleForgetLevelChunkPacket(ClientboundForgetLevelChunkPacket forgetLevelChunkPacket) {
+        if (!chunks.containsKey(forgetLevelChunkPacket.getX())) return;
+        if (!chunks.get(forgetLevelChunkPacket.getX()).containsKey(forgetLevelChunkPacket.getZ())) return;
+        chunks.get(forgetLevelChunkPacket.getX()).remove(forgetLevelChunkPacket.getZ());
+    }
+
     public int getBlockAt(Vector3d position) {
         int chunkX = (int)Math.floor(position.x / 16);
         int chunkZ = (int)Math.floor(position.z / 16);
@@ -62,17 +73,17 @@ public class World {
         else {
             chunkY = (int)Math.floor(position.y / 16);
         }
-        if (!chunks.containsKey(chunkX)) return 0;
+        if (!chunks.containsKey(chunkX)) return -1;
         Map<Integer, List<ChunkSection>> xChunks = chunks.get(chunkX);
-        if (!xChunks.containsKey(chunkZ)) return 0;
+        if (!xChunks.containsKey(chunkZ)) return -1;
         List<ChunkSection> zChunks = xChunks.get(chunkZ);
-        if (chunkY >= zChunks.size() || chunkY < 0) return 0;
+        if (chunkY >= zChunks.size() || chunkY < 0) return -1;
         ChunkSection section = zChunks.get(chunkY);
         try {
             return section.getBlock((int)Math.floor(position.x) & 15, (int)Math.floor(position.y) & 15, (int)Math.floor(position.z) & 15);
         }
         catch (IndexOutOfBoundsException e) {
-            return 0;
+            return -1;
         }
     }
 }

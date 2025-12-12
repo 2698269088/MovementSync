@@ -19,7 +19,7 @@
         <dependency>
             <groupId>com.github.huangdihd</groupId>
             <artifactId>xinbot</artifactId>
-            <version>1.13.0-RELEASE</version>
+            <version>1.13.1-RELEASE</version>
         </dependency>
         <dependency>
             <groupId>org.joml</groupId>
@@ -57,12 +57,21 @@
                         </goals>
                         <configuration>
                             <finalName>${project.artifactId}-${project.version}</finalName>
-                            <transformers>
-                            </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 
