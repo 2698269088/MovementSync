@@ -8,6 +8,7 @@ import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.Clien
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSectionBlocksUpdatePacket;
 import org.joml.Vector3d;
+import org.joml.Vector3i;
 import xin.bbtt.mcbot.Bot;
 import xin.bbtt.mcbot.Server;
 
@@ -19,7 +20,11 @@ public class World {
     private World() {}
     private final Map<Integer, Map<Integer, List<ChunkSection>>> chunks = new ConcurrentHashMap<>();
 
-    public static boolean isOnGround(Vector3d position) {
+    public boolean isOnGround(Vector3d position) {
+
+        Vector3i chunk = getChunk(position);
+        if (!chunkLoaded(chunk.x, chunk.z)) return true;
+
         Vector3d bottomBlockPos = new Vector3d(position).floor().add(Direction.DOWN.getUnitVector());
 
         if (position.y > (int)position.y + 0.0001) {
@@ -93,27 +98,40 @@ public class World {
         chunks.get(forgetLevelChunkPacket.getX()).remove(forgetLevelChunkPacket.getZ());
     }
 
-    public int getBlockAt(Vector3d position) {
-        int chunkX = (int)Math.floor(position.x / 16);
-        int chunkZ = (int)Math.floor(position.z / 16);
+    public Vector3i getChunk(Vector3d blockPosition) {
+        int chunkX = (int)Math.floor(blockPosition.x / 16);
+        int chunkZ = (int)Math.floor(blockPosition.z / 16);
         int chunkY;
         if (Bot.Instance.getServer() == Server.Xin) {
-            chunkY = ((int)Math.floor(position.y + 64) / 16);
+            chunkY = ((int)Math.floor(blockPosition.y + 64) / 16);
         }
         else {
-            chunkY = (int)Math.floor(position.y / 16);
+            chunkY = (int)Math.floor(blockPosition.y / 16);
         }
-        if (!chunks.containsKey(chunkX)) return -1;
+        return new Vector3i(chunkX, chunkY, chunkZ);
+    }
+
+    public boolean chunkLoaded(int chunkX, int chunkZ) {
+        return chunks.containsKey(chunkX) && chunks.get(chunkX).containsKey(chunkZ);
+    }
+
+    public int getBlockAt(Vector3d position) {
+        Vector3i chunk = getChunk(position);
+        int chunkX = chunk.x;
+        int chunkY = chunk.y;
+        int chunkZ = chunk.z;
+
+        if (!chunks.containsKey(chunkX)) return 0;
         Map<Integer, List<ChunkSection>> xChunks = chunks.get(chunkX);
-        if (!xChunks.containsKey(chunkZ)) return -1;
+        if (!xChunks.containsKey(chunkZ)) return 0;
         List<ChunkSection> zChunks = xChunks.get(chunkZ);
-        if (chunkY >= zChunks.size() || chunkY < 0) return -1;
+        if (chunkY >= zChunks.size() || chunkY < 0) return 0;
         ChunkSection section = zChunks.get(chunkY);
         try {
             return section.getBlock((int)Math.floor(position.x) & 15, (int)Math.floor(position.y) & 15, (int)Math.floor(position.z) & 15);
         }
         catch (IndexOutOfBoundsException e) {
-            return -1;
+            return 0;
         }
     }
 }
