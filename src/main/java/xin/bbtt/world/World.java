@@ -8,6 +8,7 @@ import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.Clien
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSectionBlocksUpdatePacket;
 import org.joml.Vector3d;
+import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.Bot;
 import xin.bbtt.mcbot.Server;
 
@@ -18,6 +19,31 @@ public class World {
     public final static World Instance = new World();
     private World() {}
     private final Map<Integer, Map<Integer, List<ChunkSection>>> chunks = new ConcurrentHashMap<>();
+
+    public static boolean isOnGround(Vector3d position) {
+        Vector3d bottomBlockPos = new Vector3d(position).floor().add(Direction.DOWN.getUnitVector());
+
+        if (World.Instance.getBlockAt(bottomBlockPos) != 0){
+            return true;
+        }
+        // North
+        if (1 + Math.floor(position.z) - position.z > 0.7) {
+            return World.Instance.getBlockAt(new Vector3d(bottomBlockPos).add(Direction.NORTH.getUnitVector())) != 0;
+        }
+        // East
+        if (position.x - Math.floor(position.x) > 0.7) {
+            return World.Instance.getBlockAt(new Vector3d(bottomBlockPos).add(Direction.EAST.getUnitVector())) != 0;
+        }
+        // South
+        if (position.z - Math.floor(position.z) > 0.7) {
+            return World.Instance.getBlockAt(new Vector3d(bottomBlockPos).add(Direction.SOUTH.getUnitVector())) != 0;
+        }
+        // West
+        if (1 + Math.floor(position.x) - position.x > 0.7) {
+            return World.Instance.getBlockAt(new Vector3d(bottomBlockPos).add(Direction.WEST.getUnitVector())) != 0;
+        }
+        return false;
+    }
 
     public void clear(){
         chunks.clear();
@@ -35,6 +61,7 @@ public class World {
             sections.add(section);
         }
         chunks.get(levelChunkWithLightPacket.getX()).put(levelChunkWithLightPacket.getZ(), sections);
+        MovementSync.Instance.getLogger().info("Loaded chunk: ({}, {})", levelChunkWithLightPacket.getX(), levelChunkWithLightPacket.getZ());
     }
 
     public void handleSectionBlocksUpdatePacket(ClientboundSectionBlocksUpdatePacket sectionBlocksUpdatePacket) {
@@ -61,6 +88,7 @@ public class World {
         if (!chunks.containsKey(forgetLevelChunkPacket.getX())) return;
         if (!chunks.get(forgetLevelChunkPacket.getX()).containsKey(forgetLevelChunkPacket.getZ())) return;
         chunks.get(forgetLevelChunkPacket.getX()).remove(forgetLevelChunkPacket.getZ());
+        MovementSync.Instance.getLogger().info("unloaded chunk: ({}, {})", forgetLevelChunkPacket.getX(), forgetLevelChunkPacket.getZ());
     }
 
     public int getBlockAt(Vector3d position) {

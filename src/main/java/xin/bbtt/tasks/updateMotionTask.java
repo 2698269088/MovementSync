@@ -5,10 +5,10 @@ import org.joml.Vector3d;
 import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.Bot;
 import xin.bbtt.mcbot.Server;
-import xin.bbtt.world.World;
 
 import static xin.bbtt.MovementSync.gravitationalAcceleration;
 import static xin.bbtt.MovementSync.terminalVelocity;
+import static xin.bbtt.world.World.isOnGround;
 
 public class updateMotionTask implements Runnable {
 
@@ -19,12 +19,7 @@ public class updateMotionTask implements Runnable {
 
     public void checkOnGround() {
         Vector3d position = new Vector3d(MovementSync.Instance.position.get());
-        Vector3d bottomBlockPos = new Vector3d(Math.floor(position.x), Math.round(position.y - 1), Math.floor(position.z));
-        if (Math.abs(position.y - Math.round(position.y)) < 0.1 && World.Instance.getBlockAt(bottomBlockPos) != 0) {
-            MovementSync.Instance.onGround.set(true);
-            return;
-        }
-        MovementSync.Instance.onGround.set(false);
+        MovementSync.Instance.onGround.set(isOnGround(position));
     }
 
     @Override
