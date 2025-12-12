@@ -33,9 +33,9 @@ public class updateMotionTask implements Runnable {
         Vector3d displacement = new Vector3d();
         if (velocity.y > terminalVelocity) {
             velocity.add(gravitationalAcceleration);
-            velocity.y *= 0.98;
+            velocity.y *= 0.9800000190734863D;
             displacement.add(MovementSync.Instance.velocity.get());
-            displacement.add(new Vector3d(gravitationalAcceleration).div(2).mul(0.98));
+            displacement.add(new Vector3d(gravitationalAcceleration).div(2));
         } else if (velocity.y < 0) {
             velocity.y = terminalVelocity;
             displacement.add(MovementSync.Instance.velocity.get().add(velocity).div(2));

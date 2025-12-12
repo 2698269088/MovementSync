@@ -8,7 +8,6 @@ import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.Clien
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSectionBlocksUpdatePacket;
 import org.joml.Vector3d;
-import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.Bot;
 import xin.bbtt.mcbot.Server;
 
@@ -61,7 +60,6 @@ public class World {
             sections.add(section);
         }
         chunks.get(levelChunkWithLightPacket.getX()).put(levelChunkWithLightPacket.getZ(), sections);
-        MovementSync.Instance.getLogger().info("Loaded chunk: ({}, {})", levelChunkWithLightPacket.getX(), levelChunkWithLightPacket.getZ());
     }
 
     public void handleSectionBlocksUpdatePacket(ClientboundSectionBlocksUpdatePacket sectionBlocksUpdatePacket) {
@@ -88,7 +86,6 @@ public class World {
         if (!chunks.containsKey(forgetLevelChunkPacket.getX())) return;
         if (!chunks.get(forgetLevelChunkPacket.getX()).containsKey(forgetLevelChunkPacket.getZ())) return;
         chunks.get(forgetLevelChunkPacket.getX()).remove(forgetLevelChunkPacket.getZ());
-        MovementSync.Instance.getLogger().info("unloaded chunk: ({}, {})", forgetLevelChunkPacket.getX(), forgetLevelChunkPacket.getZ());
     }
 
     public int getBlockAt(Vector3d position) {
