@@ -19,4 +19,8 @@ public enum Direction {
         this.unitVector = new Vector3d(x, y, z);
     }
 
+    public Vector3d getVector(double distance) {
+        return new Vector3d(unitVector).mul(distance);
+    }
+
 }

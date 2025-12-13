@@ -10,6 +10,8 @@ import xin.bbtt.MovementSync;
 import xin.bbtt.events.TeleportEvent;
 import xin.bbtt.mcbot.Bot;
 
+import static xin.bbtt.tasks.updateMotionTask.checkOnGround;
+
 public class TeleportPacketListener extends SessionAdapter {
     @Override
     public synchronized void packetReceived(Session session, Packet packet) {
@@ -22,5 +24,6 @@ public class TeleportPacketListener extends SessionAdapter {
         MovementSync.Instance.position.set(position);
         session.send(new ServerboundAcceptTeleportationPacket(playerPositionPacket.getTeleportId()));
         MovementSync.Instance.velocity.set(new Vector3d());
+        checkOnGround();
     }
 }

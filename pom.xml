@@ -26,11 +26,6 @@
             <artifactId>joml</artifactId>
             <version>1.10.5</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.jglrxavpok</groupId>
-            <artifactId>hephaistos</artifactId>
-            <version>v2.1.2</version>
-        </dependency>
     </dependencies>
 
     <build>

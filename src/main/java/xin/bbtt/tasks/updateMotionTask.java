@@ -15,12 +15,17 @@ public class updateMotionTask implements Runnable {
 
     public void syncPositionToServer() {
         Bot.Instance.getSession().send(new ServerboundMovePlayerPosPacket(MovementSync.Instance.onGround.get(), MovementSync.Instance.position.get().x, MovementSync.Instance.position.get().y, MovementSync.Instance.position.get().z));
-        MovementSync.Instance.getLogger().debug("Synced position to server: ({}, {}, {}, {}), vertical velocity: {}b/t", MovementSync.Instance.onGround, MovementSync.Instance.position.get().x, MovementSync.Instance.position.get().y, MovementSync.Instance.position.get().z, MovementSync.Instance.velocity.get().y);
+        MovementSync.Instance.getLogger().info("Synced position to server: ({}, {}, {}, {}), vertical velocity: {}b/t", MovementSync.Instance.onGround, MovementSync.Instance.position.get().x, MovementSync.Instance.position.get().y, MovementSync.Instance.position.get().z, MovementSync.Instance.velocity.get().y);
     }
 
-    public void checkOnGround() {
+    public static void checkOnGround() {
+        if (MovementSync.Instance.isJumping.get()) {
+            MovementSync.Instance.onGround.set(false);
+            return;
+        }
         Vector3d position = new Vector3d(MovementSync.Instance.position.get());
         MovementSync.Instance.onGround.set(World.Instance.isOnGround(position));
+        MovementSync.Instance.getLogger().info("On ground: {}, {}", position, MovementSync.Instance.onGround);
     }
 
     @Override
@@ -56,7 +61,7 @@ public class updateMotionTask implements Runnable {
 
         position.add(displacement);
 
-        if (position.y < lowest.y){
+        if (position.y < lowest.y && !MovementSync.Instance.isJumping.get()){
             position.y = lowest.y;
         }
 

@@ -4,13 +4,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.geysermc.mcprotocollib.protocol.codec.MinecraftCodecHelper;
 import org.geysermc.mcprotocollib.protocol.data.game.chunk.ChunkSection;
+import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockChangeEntry;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockUpdatePacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundForgetLevelChunkPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSectionBlocksUpdatePacket;
 import org.joml.Vector3d;
 import org.joml.Vector3i;
-import xin.bbtt.mcbot.Bot;
-import xin.bbtt.mcbot.Server;
+import xin.bbtt.MovementSync;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,10 +19,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class World {
     public final static World Instance = new World();
     private World() {}
-    private final Map<Integer, Map<Integer, List<ChunkSection>>> chunks = new ConcurrentHashMap<>();
+    private final Map<Integer, Map<Integer, Map<Integer, ChunkSection>>> chunks = new ConcurrentHashMap<>();
 
     public boolean isOnGround(Vector3d position) {
-
         Vector3i chunk = getChunk(position);
         if (!chunkLoaded(chunk.x, chunk.z)) return true;
 
@@ -32,26 +32,24 @@ public class World {
             bottomBlockPos.y = (int)position.y;
         }
 
-        if (World.Instance.getBlockAt(bottomBlockPos) != 0){
-            return true;
-        }
+        boolean result = getBlockAt(bottomBlockPos) !=0;
         // North
         if (1 + Math.floor(position.z) - position.z > 0.7) {
-            return World.Instance.getBlockAt(new Vector3d(bottomBlockPos).add(Direction.NORTH.getUnitVector())) != 0;
+            result |= getBlockAt(new Vector3d(bottomBlockPos).add(Direction.NORTH.getUnitVector())) != 0;
         }
         // East
         if (position.x - Math.floor(position.x) > 0.7) {
-            return World.Instance.getBlockAt(new Vector3d(bottomBlockPos).add(Direction.EAST.getUnitVector())) != 0;
+            result |= getBlockAt(new Vector3d(bottomBlockPos).add(Direction.EAST.getUnitVector())) != 0;
         }
         // South
         if (position.z - Math.floor(position.z) > 0.7) {
-            return World.Instance.getBlockAt(new Vector3d(bottomBlockPos).add(Direction.SOUTH.getUnitVector())) != 0;
+            result |=  getBlockAt(new Vector3d(bottomBlockPos).add(Direction.SOUTH.getUnitVector())) != 0;
         }
         // West
         if (1 + Math.floor(position.x) - position.x > 0.7) {
-            return World.Instance.getBlockAt(new Vector3d(bottomBlockPos).add(Direction.WEST.getUnitVector())) != 0;
+            result |=  getBlockAt(new Vector3d(bottomBlockPos).add(Direction.WEST.getUnitVector())) != 0;
         }
-        return false;
+        return result;
     }
 
     public void clear(){
@@ -60,35 +58,56 @@ public class World {
 
     public void handleLevelChunkAndLightUpdate(ClientboundLevelChunkWithLightPacket levelChunkWithLightPacket) {
         if (!chunks.containsKey(levelChunkWithLightPacket.getX())) {
-            chunks.put(levelChunkWithLightPacket.getX(), new HashMap<>());
+            chunks.put(levelChunkWithLightPacket.getX(), new ConcurrentHashMap<>());
         }
         ByteBuf chunkBuf = Unpooled.wrappedBuffer(levelChunkWithLightPacket.getChunkData());
         MinecraftCodecHelper helper = new MinecraftCodecHelper();
-        List<ChunkSection> sections = new ArrayList<>();
-        ChunkSection section;
-        while (chunkBuf.isReadable() && (section = helper.readChunkSection(chunkBuf)) != null) {
-            sections.add(section);
+        List<ChunkSection> readSections = new ArrayList<>();
+        ChunkSection readSection;
+        while (chunkBuf.isReadable() && (readSection = helper.readChunkSection(chunkBuf)) != null) {
+            readSections.add(readSection);
+        }
+        int lowest = readSections.size() == 16 ? 0 : -4;
+        Map<Integer, ChunkSection> sections = new ConcurrentHashMap<>();
+        for (int y = 0;y < readSections.size();y++) {
+            sections.put(lowest + y, readSections.get(y));
         }
         chunks.get(levelChunkWithLightPacket.getX()).put(levelChunkWithLightPacket.getZ(), sections);
+        MovementSync.Instance.getLogger().debug("Loaded chunk: ({}, {})", levelChunkWithLightPacket.getX(), levelChunkWithLightPacket.getZ());
+    }
+
+    public void handleBlockUpdatePacket(ClientboundBlockUpdatePacket blockUpdatePacket) {
+        MovementSync.Instance.getLogger().info("{}", blockUpdatePacket);
+        BlockChangeEntry blockChangeEntry = blockUpdatePacket.getEntry();
+        Vector3i chunk = getChunk(blockChangeEntry.getPosition());
+        if (!chunks.containsKey(chunk.x)) return;
+        Map<Integer, Map<Integer, ChunkSection>> xChunks = chunks.get(chunk.x);
+        if (!xChunks.containsKey(chunk.z)) return;
+        Map<Integer, ChunkSection> sections = xChunks.get(chunk.z);
+        ChunkSection section = sections.get(chunk.y);
+        int relativeX = blockChangeEntry.getPosition().getX() & 15;
+        int relativeY = blockChangeEntry.getPosition().getY() & 15;
+        int relativeZ = blockChangeEntry.getPosition().getZ() & 15;
+        synchronized(section) {
+            section.setBlock(relativeX, relativeY, relativeZ, blockChangeEntry.getBlock());
+        }
+        MovementSync.Instance.getLogger().info("Updated block: {}, ({}, {}, {})", chunk, relativeX, relativeY, relativeZ);
     }
 
     public void handleSectionBlocksUpdatePacket(ClientboundSectionBlocksUpdatePacket sectionBlocksUpdatePacket) {
+        MovementSync.Instance.getLogger().info("{}", sectionBlocksUpdatePacket);
         if (!chunks.containsKey(sectionBlocksUpdatePacket.getChunkX())) return;
-        Map<Integer, List<ChunkSection>> xChunks = chunks.get(sectionBlocksUpdatePacket.getChunkX());
+        Map<Integer, Map<Integer, ChunkSection>> xChunks = chunks.get(sectionBlocksUpdatePacket.getChunkX());
         if (!xChunks.containsKey(sectionBlocksUpdatePacket.getChunkZ())) return;
-        List<ChunkSection> sections = xChunks.get(sectionBlocksUpdatePacket.getChunkZ());
-        ChunkSection section;
-        if (Bot.Instance.getServer() == Server.Xin) {
-            section = sections.get(sectionBlocksUpdatePacket.getChunkY() + 4);
-        }
-        else {
-            section = sections.get(sectionBlocksUpdatePacket.getChunkY());
-        }
+        Map<Integer, ChunkSection> sections = xChunks.get(sectionBlocksUpdatePacket.getChunkZ());
+        ChunkSection section = sections.get(sectionBlocksUpdatePacket.getChunkY());
         Arrays.stream(sectionBlocksUpdatePacket.getEntries()).forEach(entry -> {
             int relativeX = entry.getPosition().getX() & 15;
             int relativeZ = entry.getPosition().getZ() & 15;
             int relativeY = entry.getPosition().getY() & 15;
-            section.setBlock(relativeX, relativeY, relativeZ, entry.getBlock());
+            synchronized(section) {
+                section.setBlock(relativeX, relativeY, relativeZ, entry.getBlock());
+            }
         });
     }
 
@@ -96,19 +115,30 @@ public class World {
         if (!chunks.containsKey(forgetLevelChunkPacket.getX())) return;
         if (!chunks.get(forgetLevelChunkPacket.getX()).containsKey(forgetLevelChunkPacket.getZ())) return;
         chunks.get(forgetLevelChunkPacket.getX()).remove(forgetLevelChunkPacket.getZ());
+        MovementSync.Instance.getLogger().debug("Unloaded chunk: ({}, {})", forgetLevelChunkPacket.getX(), forgetLevelChunkPacket.getZ());
+    }
+
+    public Vector3i getChunk(org.cloudburstmc.math.vector.Vector3i blockPosition) {
+        return getChunk(new Vector3i(
+                        blockPosition.getX(),
+                        blockPosition.getY(),
+                        blockPosition.getZ()
+        ));
+    }
+
+    public Vector3i getChunk(Vector3i blockPosition) {
+        int chunkX = blockPosition.x / 16;
+        int chunkY = blockPosition.y / 16;
+        int chunkZ = blockPosition.z / 16;
+        return new Vector3i(chunkX, chunkY, chunkZ);
     }
 
     public Vector3i getChunk(Vector3d blockPosition) {
-        int chunkX = (int)Math.floor(blockPosition.x / 16);
-        int chunkZ = (int)Math.floor(blockPosition.z / 16);
-        int chunkY;
-        if (Bot.Instance.getServer() == Server.Xin) {
-            chunkY = ((int)Math.floor(blockPosition.y + 64) / 16);
-        }
-        else {
-            chunkY = (int)Math.floor(blockPosition.y / 16);
-        }
-        return new Vector3i(chunkX, chunkY, chunkZ);
+        return new Vector3i(
+                (int)Math.floor(blockPosition.x / 16),
+                (int)Math.floor(blockPosition.y / 16),
+                (int)Math.floor(blockPosition.z / 16)
+        );
     }
 
     public boolean chunkLoaded(int chunkX, int chunkZ) {
@@ -120,15 +150,19 @@ public class World {
         int chunkX = chunk.x;
         int chunkY = chunk.y;
         int chunkZ = chunk.z;
-
         if (!chunks.containsKey(chunkX)) return 0;
-        Map<Integer, List<ChunkSection>> xChunks = chunks.get(chunkX);
+        Map<Integer, Map<Integer, ChunkSection>> xChunks = chunks.get(chunkX);
         if (!xChunks.containsKey(chunkZ)) return 0;
-        List<ChunkSection> zChunks = xChunks.get(chunkZ);
-        if (chunkY >= zChunks.size() || chunkY < 0) return 0;
+        Map<Integer, ChunkSection> zChunks = xChunks.get(chunkZ);
+        if (!zChunks.containsKey(chunkY)) return 0;
         ChunkSection section = zChunks.get(chunkY);
+        int relativeX = (int)Math.floor(position.x) & 15;
+        int relativeY = (int)Math.floor(position.y) & 15;
+        int relativeZ = (int)Math.floor(position.z) & 15;
         try {
-            return section.getBlock((int)Math.floor(position.x) & 15, (int)Math.floor(position.y) & 15, (int)Math.floor(position.z) & 15);
+            synchronized (section) {
+                return section.getBlock(relativeX, relativeY, relativeZ);
+            }
         }
         catch (IndexOutOfBoundsException e) {
             return 0;

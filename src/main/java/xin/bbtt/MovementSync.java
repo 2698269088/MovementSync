@@ -23,8 +23,11 @@ public class MovementSync implements Plugin {
     public AtomicReference<Vector3d> velocity = new AtomicReference<>();
     public static final Vector3d gravitationalAcceleration = new Vector3d(0, -0.08, 0);
     public static final double terminalVelocity = -3.92;
+    public static final double movementSpeed = 0.2159;
     public AtomicBoolean onGround = new AtomicBoolean(true);
     private ScheduledExecutorService physicalSimulationService;
+    public ScheduledExecutorService movementService;
+    public AtomicBoolean isJumping = new AtomicBoolean(false);
 
     public MovementSync() {
         Instance = this;
@@ -58,19 +61,22 @@ public class MovementSync implements Plugin {
 
         physicalSimulationService = Executors.newScheduledThreadPool(1);
         physicalSimulationService.scheduleAtFixedRate(new updateMotionTask(), 0, 50, TimeUnit.MILLISECONDS);
+        movementService = Executors.newScheduledThreadPool(1);
     }
 
     @Override
     public void onDisable() {
         getLogger().info("Disabling MovementSync");
         physicalSimulationService.shutdown();
+        movementService.shutdown();
     }
 
     public void jump() {
-        if (onGround.get()) {
+        // MovementController.Instance.addMovement(new jumpMovement());
+        if (MovementSync.Instance.onGround.get()) {
             MovementSync.Instance.getLogger().info("jumping");
-            onGround.set(false);
-            velocity.updateAndGet(p -> new Vector3d(p).add(new Vector3d(0, 0.42, 0)));
+            MovementSync.Instance.onGround.set(false);
+            MovementSync.Instance.velocity.updateAndGet(p -> new Vector3d(p).add(new Vector3d(0, 0.42, 0)));
         }
     }
 }
