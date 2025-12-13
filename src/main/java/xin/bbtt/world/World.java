@@ -15,8 +15,10 @@ import xin.bbtt.MovementSync;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class World {
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     public final static World Instance = new World();
     private World() {}
     private final Map<Integer, Map<Integer, Map<Integer, ChunkSection>>> chunks = new ConcurrentHashMap<>();
@@ -80,35 +82,44 @@ public class World {
         MovementSync.Instance.getLogger().info("{}", blockUpdatePacket);
         BlockChangeEntry blockChangeEntry = blockUpdatePacket.getEntry();
         Vector3i chunk = getChunk(blockChangeEntry.getPosition());
-        if (!chunks.containsKey(chunk.x)) return;
-        Map<Integer, Map<Integer, ChunkSection>> xChunks = chunks.get(chunk.x);
-        if (!xChunks.containsKey(chunk.z)) return;
-        Map<Integer, ChunkSection> sections = xChunks.get(chunk.z);
-        ChunkSection section = sections.get(chunk.y);
-        int relativeX = blockChangeEntry.getPosition().getX() & 15;
-        int relativeY = blockChangeEntry.getPosition().getY() & 15;
-        int relativeZ = blockChangeEntry.getPosition().getZ() & 15;
-        synchronized(section) {
+        lock.writeLock().lock();
+        try {
+            if (!chunks.containsKey(chunk.x)) return;
+            Map<Integer, Map<Integer, ChunkSection>> xChunks = chunks.get(chunk.x);
+            if (!xChunks.containsKey(chunk.z)) return;
+            Map<Integer, ChunkSection> sections = xChunks.get(chunk.z);
+            ChunkSection section = sections.get(chunk.y);
+            int relativeX = blockChangeEntry.getPosition().getX() & 15;
+            int relativeY = blockChangeEntry.getPosition().getY() & 15;
+            int relativeZ = blockChangeEntry.getPosition().getZ() & 15;
             section.setBlock(relativeX, relativeY, relativeZ, blockChangeEntry.getBlock());
         }
-        MovementSync.Instance.getLogger().info("Updated block: {}, ({}, {}, {})", chunk, relativeX, relativeY, relativeZ);
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     public void handleSectionBlocksUpdatePacket(ClientboundSectionBlocksUpdatePacket sectionBlocksUpdatePacket) {
         MovementSync.Instance.getLogger().info("{}", sectionBlocksUpdatePacket);
-        if (!chunks.containsKey(sectionBlocksUpdatePacket.getChunkX())) return;
-        Map<Integer, Map<Integer, ChunkSection>> xChunks = chunks.get(sectionBlocksUpdatePacket.getChunkX());
-        if (!xChunks.containsKey(sectionBlocksUpdatePacket.getChunkZ())) return;
-        Map<Integer, ChunkSection> sections = xChunks.get(sectionBlocksUpdatePacket.getChunkZ());
-        ChunkSection section = sections.get(sectionBlocksUpdatePacket.getChunkY());
-        Arrays.stream(sectionBlocksUpdatePacket.getEntries()).forEach(entry -> {
-            int relativeX = entry.getPosition().getX() & 15;
-            int relativeZ = entry.getPosition().getZ() & 15;
-            int relativeY = entry.getPosition().getY() & 15;
-            synchronized(section) {
-                section.setBlock(relativeX, relativeY, relativeZ, entry.getBlock());
-            }
-        });
+        lock.writeLock().lock();
+        try {
+            if (!chunks.containsKey(sectionBlocksUpdatePacket.getChunkX())) return;
+            Map<Integer, Map<Integer, ChunkSection>> xChunks = chunks.get(sectionBlocksUpdatePacket.getChunkX());
+            if (!xChunks.containsKey(sectionBlocksUpdatePacket.getChunkZ())) return;
+            Map<Integer, ChunkSection> sections = xChunks.get(sectionBlocksUpdatePacket.getChunkZ());
+            ChunkSection section = sections.get(sectionBlocksUpdatePacket.getChunkY());
+            Arrays.stream(sectionBlocksUpdatePacket.getEntries()).forEach(entry -> {
+                int relativeX = entry.getPosition().getX() & 15;
+                int relativeZ = entry.getPosition().getZ() & 15;
+                int relativeY = entry.getPosition().getY() & 15;
+                synchronized (section) {
+                    section.setBlock(relativeX, relativeY, relativeZ, entry.getBlock());
+                }
+            });
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     public void handleForgetLevelChunkPacket(ClientboundForgetLevelChunkPacket forgetLevelChunkPacket) {
@@ -150,22 +161,27 @@ public class World {
         int chunkX = chunk.x;
         int chunkY = chunk.y;
         int chunkZ = chunk.z;
-        if (!chunks.containsKey(chunkX)) return 0;
-        Map<Integer, Map<Integer, ChunkSection>> xChunks = chunks.get(chunkX);
-        if (!xChunks.containsKey(chunkZ)) return 0;
-        Map<Integer, ChunkSection> zChunks = xChunks.get(chunkZ);
-        if (!zChunks.containsKey(chunkY)) return 0;
-        ChunkSection section = zChunks.get(chunkY);
-        int relativeX = (int)Math.floor(position.x) & 15;
-        int relativeY = (int)Math.floor(position.y) & 15;
-        int relativeZ = (int)Math.floor(position.z) & 15;
+        lock.readLock().lock();
         try {
-            synchronized (section) {
-                return section.getBlock(relativeX, relativeY, relativeZ);
+            if (!chunks.containsKey(chunkX)) return 0;
+            Map<Integer, Map<Integer, ChunkSection>> xChunks = chunks.get(chunkX);
+            if (!xChunks.containsKey(chunkZ)) return 0;
+            Map<Integer, ChunkSection> zChunks = xChunks.get(chunkZ);
+            if (!zChunks.containsKey(chunkY)) return 0;
+            ChunkSection section = zChunks.get(chunkY);
+            int relativeX = (int) Math.floor(position.x) & 15;
+            int relativeY = (int) Math.floor(position.y) & 15;
+            int relativeZ = (int) Math.floor(position.z) & 15;
+            try {
+                synchronized (section) {
+                    return section.getBlock(relativeX, relativeY, relativeZ);
+                }
+            } catch (IndexOutOfBoundsException e) {
+                return 0;
             }
         }
-        catch (IndexOutOfBoundsException e) {
-            return 0;
+        finally {
+            lock.readLock().unlock();
         }
     }
 }
