@@ -93,6 +93,11 @@ public class World {
             int relativeY = blockChangeEntry.getPosition().getY() & 15;
             int relativeZ = blockChangeEntry.getPosition().getZ() & 15;
             section.setBlock(relativeX, relativeY, relativeZ, blockChangeEntry.getBlock());
+            MovementSync.Instance.getLogger().info("{}", getBlockAt(new Vector3d(
+                    blockUpdatePacket.getEntry().getPosition().getX(),
+                    blockUpdatePacket.getEntry().getPosition().getY(),
+                    blockUpdatePacket.getEntry().getPosition().getZ()
+            )));
         }
         finally {
             lock.writeLock().unlock();
@@ -138,17 +143,17 @@ public class World {
     }
 
     public Vector3i getChunk(Vector3i blockPosition) {
-        int chunkX = blockPosition.x / 16;
-        int chunkY = blockPosition.y / 16;
-        int chunkZ = blockPosition.z / 16;
+        int chunkX = blockPosition.x >> 4;
+        int chunkY = blockPosition.y >> 4;
+        int chunkZ = blockPosition.z >> 4;
         return new Vector3i(chunkX, chunkY, chunkZ);
     }
 
     public Vector3i getChunk(Vector3d blockPosition) {
         return new Vector3i(
-                (int)Math.floor(blockPosition.x / 16),
-                (int)Math.floor(blockPosition.y / 16),
-                (int)Math.floor(blockPosition.z / 16)
+                (int)Math.floor(blockPosition.x) >> 4,
+                (int)Math.floor(blockPosition.y) >> 4,
+                (int)Math.floor(blockPosition.z) >> 4
         );
     }
 

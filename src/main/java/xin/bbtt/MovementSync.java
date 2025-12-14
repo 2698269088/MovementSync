@@ -1,10 +1,7 @@
 package xin.bbtt;
 
 import org.joml.Vector3d;
-import xin.bbtt.commands.JumpCommand;
-import xin.bbtt.commands.JumpCommandExecutor;
-import xin.bbtt.commands.WhereAmICommand;
-import xin.bbtt.commands.WhereAmICommandExecutor;
+import xin.bbtt.commands.*;
 import xin.bbtt.listeners.*;
 import xin.bbtt.mcbot.Bot;
 import xin.bbtt.mcbot.plugin.Plugin;
@@ -56,6 +53,7 @@ public class MovementSync implements Plugin {
 
         Bot.Instance.getPluginManager().registerCommand(new WhereAmICommand(), new WhereAmICommandExecutor(),  this);
         Bot.Instance.getPluginManager().registerCommand(new JumpCommand(), new JumpCommandExecutor(),  this);
+        Bot.Instance.getPluginManager().registerCommand(new GetBlockAtCommand(), new GetBlockAtCommandExecutor(), this);
 
         Bot.Instance.getPluginManager().events().registerEvents(new ServerChangeListener(),  this);
 

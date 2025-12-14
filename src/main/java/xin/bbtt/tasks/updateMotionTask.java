@@ -25,7 +25,6 @@ public class updateMotionTask implements Runnable {
         }
         Vector3d position = new Vector3d(MovementSync.Instance.position.get());
         MovementSync.Instance.onGround.set(World.Instance.isOnGround(position));
-        MovementSync.Instance.getLogger().info("On ground: {}, {}", position, MovementSync.Instance.onGround);
     }
 
     @Override
