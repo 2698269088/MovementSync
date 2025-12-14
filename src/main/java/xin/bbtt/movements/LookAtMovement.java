@@ -1,7 +1,6 @@
 package xin.bbtt.movements;
 
 import org.joml.Vector3d;
-import org.joml.Vector3i;
 import xin.bbtt.MovementSync;
 import xin.bbtt.movement.Movement;
 import xin.bbtt.world.Direction;
@@ -12,14 +11,6 @@ public class LookAtMovement extends Movement {
 
     public LookAtMovement(Vector3d target) {
         this.target = target;
-    }
-
-    public LookAtMovement(Vector3i target) {
-        this.target = new Vector3d(
-                target.x + .5d,
-                target.y + .5d,
-                target.z + .5d
-        );
     }
 
     @Override

@@ -1,5 +1,7 @@
 package xin.bbtt.commands;
 
+import org.joml.Vector3d;
+import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.command.Command;
 import xin.bbtt.mcbot.command.TabExecutor;
 import xin.bbtt.movement.MovementController;
@@ -8,6 +10,7 @@ import xin.bbtt.world.Direction;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class WalkCommandExecutor extends TabExecutor {
     @Override
@@ -16,18 +19,28 @@ public class WalkCommandExecutor extends TabExecutor {
         if (args.length == 1) {
             args = new String[]{args[0], "1000"};
         }
-        Direction direction = Direction.valueOf(args[0]);
+        Vector3d velocity;
+        if (args[0].equals("FRONT")) {
+            velocity = Direction.getUnitVectorByYaw(MovementSync.Instance.yaw.get()).mul(MovementSync.movementSpeed);
+        }
+        else {
+            Direction direction = Direction.valueOf(args[0]);
+            if (direction.getUnitVector().y() != 0) return;
+            velocity = direction.getVector(MovementSync.movementSpeed);
+        }
         long time = Integer.parseInt(args[1]);
-
-        if (direction.getUnitVector().y() != 0) return;
-
-        MovementController.Instance.addMovement(new WalkMovement(direction, time));
+        MovementController.Instance.addMovement(new WalkMovement(velocity, time));
     }
 
     @Override
     public List<String> onTabComplete(Command command, String label, String[] args) {
         if (args.length == 1) {
-            return Arrays.stream(Direction.values()).filter(direction->direction.getUnitVector().y() == 0).map(Direction::toString).toList();
+            List<String> directions = Arrays.stream(Direction.values())
+                    .filter(d -> d.getUnitVector().y() == 0)
+                    .map(Direction::toString)
+                    .collect(Collectors.toList());
+            directions.add("FRONT");
+            return directions;
         }
         return List.of();
     }

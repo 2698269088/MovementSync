@@ -23,4 +23,11 @@ public enum Direction {
         return new Vector3d(unitVector).mul(distance);
     }
 
+    public static Vector3d getUnitVectorByYaw(float yaw) {
+        double yawRad = Math.toRadians(yaw);
+        double x = -Math.sin(yawRad);
+        double y = 0;
+        double z = Math.cos(yawRad);
+        return new Vector3d(x, y, z);
+    }
 }

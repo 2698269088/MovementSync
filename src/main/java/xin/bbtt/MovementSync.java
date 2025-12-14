@@ -1,7 +1,6 @@
 package xin.bbtt;
 
 import org.joml.Vector3d;
-import org.joml.Vector3i;
 import xin.bbtt.commands.*;
 import xin.bbtt.listeners.*;
 import xin.bbtt.mcbot.Bot;
@@ -83,10 +82,6 @@ public class MovementSync implements Plugin {
     }
 
     public void lookAt(Vector3d target) {
-        MovementController.Instance.addMovement(new LookAtMovement(target));
-    }
-
-    public void lookAtBlock(Vector3i target) {
         MovementController.Instance.addMovement(new LookAtMovement(target));
     }
 }
