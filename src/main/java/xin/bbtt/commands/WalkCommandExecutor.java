@@ -1,6 +1,5 @@
 package xin.bbtt.commands;
 
-import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.command.Command;
 import xin.bbtt.mcbot.command.TabExecutor;
 import xin.bbtt.movement.MovementController;
@@ -15,7 +14,7 @@ public class WalkCommandExecutor extends TabExecutor {
     public void onCommand(Command command, String label, String[] args) {
         if (args.length == 0) return;
         if (args.length == 1) {
-            args = new String[]{args[0], "20"};
+            args = new String[]{args[0], "1000"};
         }
         Direction direction = Direction.valueOf(args[0]);
         long time = Integer.parseInt(args[1]);
