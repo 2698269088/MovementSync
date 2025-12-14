@@ -1,14 +1,14 @@
 package xin.bbtt.commands;
 
-import org.joml.Vector3d;
 import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.command.Command;
 import xin.bbtt.mcbot.command.TabExecutor;
+import xin.bbtt.movement.MovementController;
+import xin.bbtt.movements.WalkMovement;
 import xin.bbtt.world.Direction;
 
+import java.util.Arrays;
 import java.util.List;
-
-import static xin.bbtt.MovementSync.movementSpeed;
 
 public class WalkCommandExecutor extends TabExecutor {
     @Override
@@ -18,15 +18,15 @@ public class WalkCommandExecutor extends TabExecutor {
             args = new String[]{args[0], "20"};
         }
         Direction direction = Direction.valueOf(args[0]);
-        double time = Double.parseDouble(args[1]) / 20;
-        MovementSync.Instance.velocity.updateAndGet(p -> new Vector3d(p).add(direction.getVector(movementSpeed)));
+        long time = Integer.parseInt(args[1]);
 
+        MovementController.Instance.addMovement(new WalkMovement(direction, time));
     }
 
     @Override
     public List<String> onTabComplete(Command command, String label, String[] args) {
-        if (args.length == 0) {
-            return List.of("South", "North", "East", "West");
+        if (args.length == 1) {
+            return Arrays.stream(Direction.values()).filter(direction->direction.getUnitVector().y() == 0).map(Direction::toString).toList();
         }
         return List.of();
     }

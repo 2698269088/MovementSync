@@ -21,7 +21,7 @@ public class jumpMovement extends Movement {
 
     @Override
     public long getTime() {
-        return 1000;
+        return 0;
     }
 
     @Override

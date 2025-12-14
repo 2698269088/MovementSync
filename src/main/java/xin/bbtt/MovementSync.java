@@ -5,6 +5,8 @@ import xin.bbtt.commands.*;
 import xin.bbtt.listeners.*;
 import xin.bbtt.mcbot.Bot;
 import xin.bbtt.mcbot.plugin.Plugin;
+import xin.bbtt.movement.MovementController;
+import xin.bbtt.movements.jumpMovement;
 import xin.bbtt.tasks.updateMotionTask;
 
 import java.util.concurrent.Executors;
@@ -54,6 +56,7 @@ public class MovementSync implements Plugin {
         Bot.Instance.getPluginManager().registerCommand(new WhereAmICommand(), new WhereAmICommandExecutor(),  this);
         Bot.Instance.getPluginManager().registerCommand(new JumpCommand(), new JumpCommandExecutor(),  this);
         Bot.Instance.getPluginManager().registerCommand(new GetBlockAtCommand(), new GetBlockAtCommandExecutor(), this);
+        Bot.Instance.getPluginManager().registerCommand(new WalkCommand(), new WalkCommandExecutor(), this);
 
         Bot.Instance.getPluginManager().events().registerEvents(new ServerChangeListener(),  this);
 
@@ -70,11 +73,13 @@ public class MovementSync implements Plugin {
     }
 
     public void jump() {
-        // MovementController.Instance.addMovement(new jumpMovement());
+        MovementController.Instance.addMovement(new jumpMovement());
+        /*
         if (MovementSync.Instance.onGround.get()) {
             MovementSync.Instance.getLogger().info("jumping");
             MovementSync.Instance.onGround.set(false);
             MovementSync.Instance.velocity.updateAndGet(p -> new Vector3d(p).add(new Vector3d(0, 0.42, 0)));
         }
+        */
     }
 }

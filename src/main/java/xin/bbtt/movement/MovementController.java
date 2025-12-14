@@ -5,22 +5,50 @@ import xin.bbtt.tasks.MovementTask;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MovementController {
     private final Queue<Movement> movements = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean isExecuting = new AtomicBoolean(false);
+    private ScheduledFuture<?> currentTaskFuture = null;
+    private ScheduledFuture<?> currentStopFuture = null;
+    private Movement currentMovement = null;
+
     public final static MovementController Instance = new MovementController();
 
-    private MovementController(){
-    }
+    private MovementController() {}
 
     public void addMovement(Movement movement) {
         movements.add(movement);
         tryExecuteNext();
     }
+
+    public void cancelAll() {
+        movements.clear();
+
+        if (currentTaskFuture != null) {
+            currentTaskFuture.cancel(true);
+        }
+        if (currentStopFuture != null) {
+            currentStopFuture.cancel(true);
+        }
+
+        if (currentMovement != null) {
+            try {
+                currentMovement.onStop();
+            } catch (Exception e) {
+                MovementSync.Instance.getLogger().error("Failed to stop the movement", e);
+            }
+            currentMovement = null;
+        }
+
+        isExecuting.set(false);
+        currentTaskFuture = null;
+        currentStopFuture = null;
+    }
+
 
     public boolean hasMovement() {
         return !movements.isEmpty();
@@ -33,34 +61,37 @@ public class MovementController {
     }
 
     public void doNext() {
-        Movement movement = movements.poll();
+        currentMovement = movements.poll();
 
-        if (movement == null) {
+        if (currentMovement == null) {
             isExecuting.set(false);
             return;
         }
 
         try {
-            movement.init();
-            MovementTask task = new MovementTask(movement);
+            currentMovement.init();
+            MovementTask task = new MovementTask(currentMovement);
 
-            ScheduledFuture<?> rateTaskFuture = MovementSync.Instance.movementService.scheduleAtFixedRate(
+            currentTaskFuture = MovementSync.Instance.movementService.scheduleAtFixedRate(
                     task,
                     0L,
                     50L,
                     TimeUnit.MILLISECONDS
             );
-            MovementSync.Instance.movementService.schedule(() -> {
+
+            currentStopFuture = MovementSync.Instance.movementService.schedule(() -> {
                 try {
-                    rateTaskFuture.cancel(true);
-                    movement.onStop();
+                    currentTaskFuture.cancel(true);
+                    currentMovement.onStop();
                 } catch (Exception e) {
                     MovementSync.Instance.getLogger().error("Failed to stop the movement", e);
                 } finally {
                     isExecuting.set(false);
+                    currentTaskFuture = null;
+                    currentStopFuture = null;
                     tryExecuteNext();
                 }
-            }, movement.getTime(), TimeUnit.MILLISECONDS);
+            }, currentMovement.getTime(), TimeUnit.MILLISECONDS);
 
         } catch (Exception e) {
             MovementSync.Instance.getLogger().error("Failed to run the movement", e);

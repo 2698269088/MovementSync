@@ -79,7 +79,6 @@ public class World {
     }
 
     public void handleBlockUpdatePacket(ClientboundBlockUpdatePacket blockUpdatePacket) {
-        MovementSync.Instance.getLogger().info("{}", blockUpdatePacket);
         BlockChangeEntry blockChangeEntry = blockUpdatePacket.getEntry();
         Vector3i chunk = getChunk(blockChangeEntry.getPosition());
         lock.writeLock().lock();
@@ -93,11 +92,6 @@ public class World {
             int relativeY = blockChangeEntry.getPosition().getY() & 15;
             int relativeZ = blockChangeEntry.getPosition().getZ() & 15;
             section.setBlock(relativeX, relativeY, relativeZ, blockChangeEntry.getBlock());
-            MovementSync.Instance.getLogger().info("{}", getBlockAt(new Vector3d(
-                    blockUpdatePacket.getEntry().getPosition().getX(),
-                    blockUpdatePacket.getEntry().getPosition().getY(),
-                    blockUpdatePacket.getEntry().getPosition().getZ()
-            )));
         }
         finally {
             lock.writeLock().unlock();
@@ -105,7 +99,6 @@ public class World {
     }
 
     public void handleSectionBlocksUpdatePacket(ClientboundSectionBlocksUpdatePacket sectionBlocksUpdatePacket) {
-        MovementSync.Instance.getLogger().info("{}", sectionBlocksUpdatePacket);
         lock.writeLock().lock();
         try {
             if (!chunks.containsKey(sectionBlocksUpdatePacket.getChunkX())) return;

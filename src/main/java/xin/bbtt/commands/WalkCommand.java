@@ -20,6 +20,6 @@ public class WalkCommand extends Command {
 
     @Override
     public String getUsage() {
-        return "walk direction time(tick)";
+        return "walk direction time(milliseconds)";
     }
 }
