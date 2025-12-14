@@ -9,6 +9,7 @@ import xin.bbtt.movement.MovementController;
 import xin.bbtt.movements.JumpMovement;
 import xin.bbtt.movements.LookAtMovement;
 import xin.bbtt.tasks.updateMotionTask;
+import xin.bbtt.world.Direction;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -83,5 +84,10 @@ public class MovementSync implements Plugin {
 
     public void lookAt(Vector3d target) {
         MovementController.Instance.addMovement(new LookAtMovement(target));
+    }
+
+    public Vector3d getHeadPosition() {
+        return new Vector3d(MovementSync.Instance.position.get())
+                .add(Direction.UP.getVector(1.62));
     }
 }

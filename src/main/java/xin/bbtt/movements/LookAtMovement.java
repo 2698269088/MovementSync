@@ -3,7 +3,6 @@ package xin.bbtt.movements;
 import org.joml.Vector3d;
 import xin.bbtt.MovementSync;
 import xin.bbtt.movement.Movement;
-import xin.bbtt.world.Direction;
 
 
 public class LookAtMovement extends Movement {
@@ -15,10 +14,7 @@ public class LookAtMovement extends Movement {
 
     @Override
     public void init() {
-        Vector3d headPosition = new Vector3d(MovementSync.Instance.position.get())
-                .add(Direction.UP.getVector(1.62));
-
-        Vector3d delta = new Vector3d(target).sub(headPosition);
+        Vector3d delta = new Vector3d(target).sub(MovementSync.Instance.getHeadPosition());
 
         double dx = delta.x;
         double dy = delta.y;

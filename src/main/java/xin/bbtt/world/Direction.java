@@ -30,4 +30,14 @@ public enum Direction {
         double z = Math.cos(yawRad);
         return new Vector3d(x, y, z);
     }
+
+    public static Vector3d getUnitVectorByYawAndPitch(float yaw, float pitch) {
+        double yawRad = Math.toRadians(yaw);
+        double pitchRad = Math.toRadians(pitch);
+
+        double x = -Math.sin(yawRad) * Math.cos(pitchRad);
+        double y = -Math.sin(pitchRad);
+        double z = Math.cos(yawRad) * Math.cos(pitchRad);
+        return new Vector3d(x, y, z).normalize();
+    }
 }
