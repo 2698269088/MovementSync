@@ -1,6 +1,6 @@
 package xin.bbtt.tasks;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerPosPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerPosRotPacket;
 import org.joml.Vector3d;
 import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.Bot;
@@ -13,16 +13,24 @@ import static xin.bbtt.MovementSync.terminalVelocity;
 
 public class updateMotionTask implements Runnable {
 
+    Vector3d lastPos = new Vector3d();
+    float lastPitch = 0;
+    float lastYaw = 0;
+
     public void syncPositionToServer() {
-        Bot.Instance.getSession().send(new ServerboundMovePlayerPosPacket(MovementSync.Instance.onGround.get(), MovementSync.Instance.position.get().x, MovementSync.Instance.position.get().y, MovementSync.Instance.position.get().z));
+        Bot.Instance.getSession().send(new ServerboundMovePlayerPosRotPacket(
+                MovementSync.Instance.onGround.get(),
+                MovementSync.Instance.position.get().x,
+                MovementSync.Instance.position.get().y,
+                MovementSync.Instance.position.get().z,
+                MovementSync.Instance.yaw.get(),
+                MovementSync.Instance.pitch.get()
+
+        ));
         MovementSync.Instance.getLogger().debug("Synced position to server: ({}, {}, {}, {}), vertical velocity: {}b/t", MovementSync.Instance.onGround, MovementSync.Instance.position.get().x, MovementSync.Instance.position.get().y, MovementSync.Instance.position.get().z, MovementSync.Instance.velocity.get().y);
     }
 
     public static void checkOnGround() {
-        if (MovementSync.Instance.isJumping.get()) {
-            MovementSync.Instance.onGround.set(false);
-            return;
-        }
         Vector3d position = new Vector3d(MovementSync.Instance.position.get());
         MovementSync.Instance.onGround.set(World.Instance.isOnGround(position));
     }
@@ -31,7 +39,6 @@ public class updateMotionTask implements Runnable {
     public void run() {
         if (!Bot.Instance.isRunning()) return;
         if (Bot.Instance.getServer() != Server.Xin) return;
-        Vector3d lastPos = new Vector3d(MovementSync.Instance.position.get());
         Vector3d velocity = MovementSync.Instance.velocity.get();
         Vector3d displacement = new Vector3d();
 
@@ -60,16 +67,19 @@ public class updateMotionTask implements Runnable {
 
         position.add(displacement);
 
-        if (position.y < lowest.y && !MovementSync.Instance.isJumping.get()){
+        if (position.y < lowest.y){
             position.y = lowest.y;
         }
 
         MovementSync.Instance.velocity.set(velocity);
         MovementSync.Instance.position.set(position);
 
-        if (!lastPos.equals(MovementSync.Instance.position.get()) && Bot.Instance.getServer() == Server.Xin) {
+        if (!(lastPos.equals(MovementSync.Instance.position.get()) && lastPitch == MovementSync.Instance.pitch.get() && lastYaw == MovementSync.Instance.yaw.get()) && Bot.Instance.getServer() == Server.Xin) {
             checkOnGround();
             syncPositionToServer();
+            lastPos = MovementSync.Instance.position.get();
+            lastPitch = MovementSync.Instance.pitch.get();
+            lastYaw = MovementSync.Instance.yaw.get();
         }
     }
 }

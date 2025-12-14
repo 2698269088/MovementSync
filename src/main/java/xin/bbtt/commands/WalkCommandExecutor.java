@@ -19,6 +19,8 @@ public class WalkCommandExecutor extends TabExecutor {
         Direction direction = Direction.valueOf(args[0]);
         long time = Integer.parseInt(args[1]);
 
+        if (direction.getUnitVector().y() != 0) return;
+
         MovementController.Instance.addMovement(new WalkMovement(direction, time));
     }
 

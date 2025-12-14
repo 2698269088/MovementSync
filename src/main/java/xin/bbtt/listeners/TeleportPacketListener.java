@@ -22,6 +22,8 @@ public class TeleportPacketListener extends SessionAdapter {
         Bot.Instance.getPluginManager().events().callEvent(teleportEvent);
         if (teleportEvent.isDefaultActionCancelled()) return;
         MovementSync.Instance.position.set(position);
+        MovementSync.Instance.pitch.set(playerPositionPacket.getPitch());
+        MovementSync.Instance.yaw.set(playerPositionPacket.getYaw());
         session.send(new ServerboundAcceptTeleportationPacket(playerPositionPacket.getTeleportId()));
         MovementController.Instance.cancelAll();
         MovementSync.Instance.velocity.set(new Vector3d());

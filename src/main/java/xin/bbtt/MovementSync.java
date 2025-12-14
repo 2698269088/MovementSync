@@ -1,12 +1,14 @@
 package xin.bbtt;
 
 import org.joml.Vector3d;
+import org.joml.Vector3i;
 import xin.bbtt.commands.*;
 import xin.bbtt.listeners.*;
 import xin.bbtt.mcbot.Bot;
 import xin.bbtt.mcbot.plugin.Plugin;
 import xin.bbtt.movement.MovementController;
-import xin.bbtt.movements.jumpMovement;
+import xin.bbtt.movements.JumpMovement;
+import xin.bbtt.movements.LookAtMovement;
 import xin.bbtt.tasks.updateMotionTask;
 
 import java.util.concurrent.Executors;
@@ -20,13 +22,14 @@ public class MovementSync implements Plugin {
     public int entityId = -1;
     public AtomicReference<Vector3d> position = new AtomicReference<>();
     public AtomicReference<Vector3d> velocity = new AtomicReference<>();
+    public AtomicReference<Float> pitch = new AtomicReference<>();
+    public AtomicReference<Float> yaw = new AtomicReference<>();
     public static final Vector3d gravitationalAcceleration = new Vector3d(0, -0.08, 0);
     public static final double terminalVelocity = -3.92;
     public static final double movementSpeed = 0.2159;
     public AtomicBoolean onGround = new AtomicBoolean(true);
     private ScheduledExecutorService physicalSimulationService;
     public ScheduledExecutorService movementService;
-    public AtomicBoolean isJumping = new AtomicBoolean(false);
 
     public MovementSync() {
         Instance = this;
@@ -47,6 +50,8 @@ public class MovementSync implements Plugin {
         getLogger().info("Enabling MovementSync");
         position.set(new Vector3d(0, 0, 0));
         velocity.set(new Vector3d(0, 0, 0));
+        pitch.set(0f);
+        yaw.set(0f);
 
         Bot.Instance.addPacketListener(new TeleportPacketListener(), this);
         Bot.Instance.addPacketListener(new EntityIdRecorder(), this);
@@ -57,6 +62,7 @@ public class MovementSync implements Plugin {
         Bot.Instance.getPluginManager().registerCommand(new JumpCommand(), new JumpCommandExecutor(),  this);
         Bot.Instance.getPluginManager().registerCommand(new GetBlockAtCommand(), new GetBlockAtCommandExecutor(), this);
         Bot.Instance.getPluginManager().registerCommand(new WalkCommand(), new WalkCommandExecutor(), this);
+        Bot.Instance.getPluginManager().registerCommand(new LookAtCommand(), new LookAtCommandExecutor(), this);
 
         Bot.Instance.getPluginManager().events().registerEvents(new ServerChangeListener(),  this);
 
@@ -73,13 +79,14 @@ public class MovementSync implements Plugin {
     }
 
     public void jump() {
-        MovementController.Instance.addMovement(new jumpMovement());
-        /*
-        if (MovementSync.Instance.onGround.get()) {
-            MovementSync.Instance.getLogger().info("jumping");
-            MovementSync.Instance.onGround.set(false);
-            MovementSync.Instance.velocity.updateAndGet(p -> new Vector3d(p).add(new Vector3d(0, 0.42, 0)));
-        }
-        */
+        MovementController.Instance.addMovement(new JumpMovement());
+    }
+
+    public void lookAt(Vector3d target) {
+        MovementController.Instance.addMovement(new LookAtMovement(target));
+    }
+
+    public void lookAtBlock(Vector3i target) {
+        MovementController.Instance.addMovement(new LookAtMovement(target));
     }
 }
