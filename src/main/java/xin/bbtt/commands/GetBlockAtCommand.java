@@ -15,7 +15,7 @@ public class GetBlockAtCommand extends Command {
 
     @Override
     public String getDescription() {
-        return "A command to get the block at specific coordinate.";
+        return "A command to get the block at the specific coordinate.";
     }
 
     @Override
