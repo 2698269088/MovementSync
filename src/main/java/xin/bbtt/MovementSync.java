@@ -65,6 +65,7 @@ public class MovementSync implements Plugin {
         Bot.Instance.getPluginManager().registerCommand(new LookAtCommand(), new LookAtCommandExecutor(), this);
 
         Bot.Instance.getPluginManager().events().registerEvents(new ServerChangeListener(),  this);
+        Bot.Instance.getPluginManager().events().registerEvents(new EntityPacketListener(), this);
 
         physicalSimulationService = Executors.newScheduledThreadPool(1);
         physicalSimulationService.scheduleAtFixedRate(new updateMotionTask(), 0, 50, TimeUnit.MILLISECONDS);

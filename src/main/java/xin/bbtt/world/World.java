@@ -5,12 +5,16 @@ import io.netty.buffer.Unpooled;
 import org.geysermc.mcprotocollib.protocol.codec.MinecraftCodecHelper;
 import org.geysermc.mcprotocollib.protocol.data.game.chunk.ChunkSection;
 import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockChangeEntry;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosRotPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddEntityPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockUpdatePacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundForgetLevelChunkPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelChunkWithLightPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSectionBlocksUpdatePacket;
 import org.joml.Vector3d;
 import org.joml.Vector3i;
+import xin.bbtt.Entity.Entity;
 import xin.bbtt.MovementSync;
 
 import java.util.*;
@@ -22,6 +26,7 @@ public class World {
     public final static World Instance = new World();
     private World() {}
     private final Map<Integer, Map<Integer, Map<Integer, ChunkSection>>> chunks = new ConcurrentHashMap<>();
+    private final Map<Integer, Entity> entities = new ConcurrentHashMap<>();
 
     public boolean isOnGround(Vector3d position) {
         Vector3i chunk = getChunk(position);
@@ -56,6 +61,7 @@ public class World {
 
     public void clear(){
         chunks.clear();
+        entities.clear();
     }
 
     public void handleLevelChunkAndLightUpdate(ClientboundLevelChunkWithLightPacket levelChunkWithLightPacket) {
@@ -125,6 +131,37 @@ public class World {
         if (!chunks.get(forgetLevelChunkPacket.getX()).containsKey(forgetLevelChunkPacket.getZ())) return;
         chunks.get(forgetLevelChunkPacket.getX()).remove(forgetLevelChunkPacket.getZ());
         MovementSync.Instance.getLogger().debug("Unloaded chunk: ({}, {})", forgetLevelChunkPacket.getX(), forgetLevelChunkPacket.getZ());
+    }
+
+    public Entity getEntity(int entityId) {
+        return entities.get(entityId);
+    }
+
+    public void handleAddEntityPacket(ClientboundAddEntityPacket  addEntityPacket) {
+        Entity entity = Entity.fromPacket(addEntityPacket);
+        entities.put(entity.getEntityId(), entity);
+    }
+
+    public void handleMoveEntityPosPacket(ClientboundMoveEntityPosPacket moveEntityPosPacket) {
+        Entity entity = entities.get(moveEntityPosPacket.getEntityId());
+        if (entity == null) return;
+        entity.move(new Vector3d(
+                moveEntityPosPacket.getMoveX(),
+                moveEntityPosPacket.getMoveY(),
+                moveEntityPosPacket.getMoveZ()
+        ));
+    }
+
+    public void handleMoveEntityPosRotPacket(ClientboundMoveEntityPosRotPacket moveEntityPosRotPacket) {
+        Entity entity = entities.get(moveEntityPosRotPacket.getEntityId());
+        if (entity == null) return;
+        entity.move(new Vector3d(
+                moveEntityPosRotPacket.getMoveX(),
+                moveEntityPosRotPacket.getMoveY(),
+                moveEntityPosRotPacket.getMoveZ()
+        ));
+        entity.setYaw(moveEntityPosRotPacket.getYaw());
+        entity.setPitch(moveEntityPosRotPacket.getPitch());
     }
 
     public Vector3i getChunk(org.cloudburstmc.math.vector.Vector3i blockPosition) {
