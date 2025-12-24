@@ -53,7 +53,7 @@ English / [简体中文](README_CN.md)
 ## Community & Support
 
 - **Issues**: Bug reports and feature requests
-- **Discussions**: Share ideas, code snippets, or showcase your plugins
+- **Discussions**: Share ideas, code snippets, or showcase your plugins based on MovementSync
 
 If you like MovementSync, giving a ⭐ is always appreciated!
 
