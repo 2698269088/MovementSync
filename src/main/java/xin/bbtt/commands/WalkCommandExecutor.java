@@ -20,13 +20,26 @@ public class WalkCommandExecutor extends TabExecutor {
             args = new String[]{args[0], "1000"};
         }
         Vector3d velocity;
-        if (args[0].equals("FRONT")) {
-            velocity = Direction.getUnitVectorByYaw(MovementSync.Instance.yaw.get()).mul(MovementSync.movementSpeed);
-        }
-        else {
-            Direction direction = Direction.valueOf(args[0]);
-            if (direction.getUnitVector().y() != 0) return;
-            velocity = direction.getVector(MovementSync.movementSpeed);
+        switch (args[0]) {
+            case "FRONT" ->
+                    velocity = Direction.getUnitVectorByYaw(MovementSync.Instance.yaw.get()).mul(MovementSync.movementSpeed);
+            case "LEFT" -> {
+                Vector3d right = new Vector3d();
+                Direction.getUnitVectorByYaw(MovementSync.Instance.yaw.get()).cross(Direction.UP.getUnitVector(), right).normalize();
+                velocity = right.negate().mul(MovementSync.movementSpeed);
+            }
+            case "BACK" ->
+                    velocity = Direction.getUnitVectorByYaw(MovementSync.Instance.yaw.get()).negate().mul(MovementSync.movementSpeed);
+            case "RIGHT" -> {
+                Vector3d right = new Vector3d();
+                Direction.getUnitVectorByYaw(MovementSync.Instance.yaw.get()).cross(Direction.UP.getUnitVector(), right).normalize();
+                velocity = right.mul(MovementSync.movementSpeed);
+            }
+            default -> {
+                Direction direction = Direction.valueOf(args[0]);
+                if (direction.getUnitVector().y() != 0) return;
+                velocity = direction.getVector(MovementSync.movementSpeed);
+            }
         }
         long time = Integer.parseInt(args[1]);
         MovementController.Instance.addMovement(new WalkMovement(velocity, time));
@@ -40,6 +53,9 @@ public class WalkCommandExecutor extends TabExecutor {
                     .map(Direction::toString)
                     .collect(Collectors.toList());
             directions.add("FRONT");
+            directions.add("LEFT");
+            directions.add("BACK");
+            directions.add("RIGHT");
             return directions;
         }
         return List.of();
