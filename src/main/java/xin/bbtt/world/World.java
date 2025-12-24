@@ -15,6 +15,8 @@ import org.joml.Vector3d;
 import org.joml.Vector3i;
 import xin.bbtt.Entity.Entity;
 import xin.bbtt.MovementSync;
+import xin.bbtt.events.BlockChangeEvent;
+import xin.bbtt.mcbot.Bot;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,6 +28,34 @@ public class World {
     private World() {}
     private final Map<Integer, Map<Integer, Map<Integer, ChunkSection>>> chunks = new ConcurrentHashMap<>();
     private final Map<Integer, Entity> entities = new ConcurrentHashMap<>();
+
+    public void applyChange(BlockChangeEntry entry) {
+        lock.writeLock().lock();
+        try {
+            Vector3i chunk = getChunk(entry.getPosition());
+            if (!chunks.containsKey(chunk.x)) return;
+            Map<Integer, Map<Integer, ChunkSection>> xChunks = chunks.get(chunk.x);
+            if (!xChunks.containsKey(chunk.z)) return;
+            Map<Integer, ChunkSection> sections = xChunks.get(chunk.z);
+            ChunkSection section = sections.get(chunk.y);
+            int relativeX = entry.getPosition().getX() & 15;
+            int relativeZ = entry.getPosition().getZ() & 15;
+            int relativeY = entry.getPosition().getY() & 15;
+            synchronized (section) {
+                BlockChangeEvent blockChangeEvent = new BlockChangeEvent(new Vector3i(
+                        entry.getPosition().getX(),
+                        entry.getPosition().getY(),
+                        entry.getPosition().getZ()
+                ), section.getBlock(relativeX, relativeY, relativeZ), entry.getBlock());
+                Bot.Instance.getPluginManager().events().callEvent(blockChangeEvent);
+                section.setBlock(relativeX, relativeY, relativeZ, blockChangeEvent.getChangeTo());
+                section.setBlock(relativeX, relativeY, relativeZ, entry.getBlock());
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
 
     public boolean isOnGround(Vector3d position) {
         Vector3i chunk = getChunk(position);
@@ -85,44 +115,11 @@ public class World {
 
     public void handleBlockUpdatePacket(ClientboundBlockUpdatePacket blockUpdatePacket) {
         BlockChangeEntry blockChangeEntry = blockUpdatePacket.getEntry();
-        Vector3i chunk = getChunk(blockChangeEntry.getPosition());
-        lock.writeLock().lock();
-        try {
-            if (!chunks.containsKey(chunk.x)) return;
-            Map<Integer, Map<Integer, ChunkSection>> xChunks = chunks.get(chunk.x);
-            if (!xChunks.containsKey(chunk.z)) return;
-            Map<Integer, ChunkSection> sections = xChunks.get(chunk.z);
-            ChunkSection section = sections.get(chunk.y);
-            int relativeX = blockChangeEntry.getPosition().getX() & 15;
-            int relativeY = blockChangeEntry.getPosition().getY() & 15;
-            int relativeZ = blockChangeEntry.getPosition().getZ() & 15;
-            section.setBlock(relativeX, relativeY, relativeZ, blockChangeEntry.getBlock());
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
+        applyChange(blockChangeEntry);
     }
 
     public void handleSectionBlocksUpdatePacket(ClientboundSectionBlocksUpdatePacket sectionBlocksUpdatePacket) {
-        lock.writeLock().lock();
-        try {
-            if (!chunks.containsKey(sectionBlocksUpdatePacket.getChunkX())) return;
-            Map<Integer, Map<Integer, ChunkSection>> xChunks = chunks.get(sectionBlocksUpdatePacket.getChunkX());
-            if (!xChunks.containsKey(sectionBlocksUpdatePacket.getChunkZ())) return;
-            Map<Integer, ChunkSection> sections = xChunks.get(sectionBlocksUpdatePacket.getChunkZ());
-            ChunkSection section = sections.get(sectionBlocksUpdatePacket.getChunkY());
-            Arrays.stream(sectionBlocksUpdatePacket.getEntries()).forEach(entry -> {
-                int relativeX = entry.getPosition().getX() & 15;
-                int relativeZ = entry.getPosition().getZ() & 15;
-                int relativeY = entry.getPosition().getY() & 15;
-                synchronized (section) {
-                    section.setBlock(relativeX, relativeY, relativeZ, entry.getBlock());
-                }
-            });
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
+        Arrays.stream(sectionBlocksUpdatePacket.getEntries()).forEach(this::applyChange);
     }
 
     public void handleForgetLevelChunkPacket(ClientboundForgetLevelChunkPacket forgetLevelChunkPacket) {
@@ -162,7 +159,6 @@ public class World {
         Entity entity = entities.get(rotateHeadPacket.getEntityId());
         if (entity == null) return;
         entity.setHeadYaw(rotateHeadPacket.getHeadYaw());
-
     }
 
     public void handleMoveEntityPosRotPacket(ClientboundMoveEntityPosRotPacket moveEntityPosRotPacket) {
