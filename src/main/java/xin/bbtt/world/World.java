@@ -5,9 +5,7 @@ import io.netty.buffer.Unpooled;
 import org.geysermc.mcprotocollib.protocol.codec.MinecraftCodecHelper;
 import org.geysermc.mcprotocollib.protocol.data.game.chunk.ChunkSection;
 import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockChangeEntry;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosRotPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.*;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddEntityPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockUpdatePacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundForgetLevelChunkPacket;
@@ -151,6 +149,20 @@ public class World {
                 moveEntityPosPacket.getMoveY(),
                 moveEntityPosPacket.getMoveZ()
         ));
+    }
+
+    public void handleMoveEntityRotPacket(ClientboundMoveEntityRotPacket moveEntityRotPacket) {
+        Entity entity = entities.get(moveEntityRotPacket.getEntityId());
+        if (entity == null) return;
+        entity.setYaw(moveEntityRotPacket.getYaw());
+        entity.setPitch(moveEntityRotPacket.getPitch());
+    }
+
+    public void handleRotateHeadPacket(ClientboundRotateHeadPacket rotateHeadPacket) {
+        Entity entity = entities.get(rotateHeadPacket.getEntityId());
+        if (entity == null) return;
+        entity.setHeadYaw(rotateHeadPacket.getHeadYaw());
+
     }
 
     public void handleMoveEntityPosRotPacket(ClientboundMoveEntityPosRotPacket moveEntityPosRotPacket) {
