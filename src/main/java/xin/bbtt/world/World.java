@@ -16,6 +16,8 @@ import org.joml.Vector3i;
 import xin.bbtt.Entity.Entity;
 import xin.bbtt.MovementSync;
 import xin.bbtt.events.BlockChangeEvent;
+import xin.bbtt.events.LoadChunkEvent;
+import xin.bbtt.events.UnloadChunkEvent;
 import xin.bbtt.mcbot.Bot;
 
 import java.util.*;
@@ -110,6 +112,8 @@ public class World {
             sections.put(lowest + y, readSections.get(y));
         }
         chunks.get(levelChunkWithLightPacket.getX()).put(levelChunkWithLightPacket.getZ(), sections);
+        LoadChunkEvent loadChunkEvent = new LoadChunkEvent(levelChunkWithLightPacket.getX(), levelChunkWithLightPacket.getZ());
+        Bot.Instance.getPluginManager().events().callEvent(loadChunkEvent);
         MovementSync.Instance.getLogger().debug("Loaded chunk: ({}, {})", levelChunkWithLightPacket.getX(), levelChunkWithLightPacket.getZ());
     }
 
@@ -125,6 +129,8 @@ public class World {
     public void handleForgetLevelChunkPacket(ClientboundForgetLevelChunkPacket forgetLevelChunkPacket) {
         if (!chunks.containsKey(forgetLevelChunkPacket.getX())) return;
         if (!chunks.get(forgetLevelChunkPacket.getX()).containsKey(forgetLevelChunkPacket.getZ())) return;
+        UnloadChunkEvent unloadChunkEvent = new UnloadChunkEvent(forgetLevelChunkPacket.getX(), forgetLevelChunkPacket.getZ());
+        Bot.Instance.getPluginManager().events().callEvent(unloadChunkEvent);
         chunks.get(forgetLevelChunkPacket.getX()).remove(forgetLevelChunkPacket.getZ());
         MovementSync.Instance.getLogger().debug("Unloaded chunk: ({}, {})", forgetLevelChunkPacket.getX(), forgetLevelChunkPacket.getZ());
     }
