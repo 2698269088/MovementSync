@@ -7,6 +7,7 @@ import org.geysermc.mcprotocollib.protocol.data.game.chunk.ChunkSection;
 import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockChangeEntry;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosRotPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddEntityPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockUpdatePacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundForgetLevelChunkPacket;
@@ -162,6 +163,12 @@ public class World {
         ));
         entity.setYaw(moveEntityPosRotPacket.getYaw());
         entity.setPitch(moveEntityPosRotPacket.getPitch());
+    }
+
+    public void handleRemoveEntitiesPacket(ClientboundRemoveEntitiesPacket removeEntitiesPacket) {
+        for (int entityId : removeEntitiesPacket.getEntityIds()) {
+            this.entities.remove(entityId);
+        }
     }
 
     public Vector3i getChunk(org.cloudburstmc.math.vector.Vector3i blockPosition) {

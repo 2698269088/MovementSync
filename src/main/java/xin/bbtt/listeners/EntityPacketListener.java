@@ -2,6 +2,7 @@ package xin.bbtt.listeners;
 
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosRotPacket;
+import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddEntityPacket;
 import xin.bbtt.mcbot.event.EventHandler;
 import xin.bbtt.mcbot.event.Listener;
@@ -23,5 +24,10 @@ public class EntityPacketListener implements Listener {
     @EventHandler
     public void OnMoveEntityPositronRotation(ReceivePacketEvent<ClientboundMoveEntityPosRotPacket> receivePacketEvent) {
         World.Instance.handleMoveEntityPosRotPacket(receivePacketEvent.getPacket());
+    }
+
+    @EventHandler
+    public void OnRemoveEntity(ReceivePacketEvent<ClientboundRemoveEntitiesPacket> receivePacketEvent) {
+        World.Instance.handleRemoveEntitiesPacket(receivePacketEvent.getPacket());
     }
 }
