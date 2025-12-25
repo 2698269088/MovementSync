@@ -3,6 +3,7 @@ package xin.bbtt.commands;
 import org.joml.Vector3d;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import xin.bbtt.Block.BlockStateParser;
 import xin.bbtt.mcbot.command.Command;
 import xin.bbtt.mcbot.command.CommandExecutor;
 import xin.bbtt.world.World;
@@ -24,6 +25,6 @@ public class GetBlockAtCommandExecutor extends CommandExecutor {
         } catch (NumberFormatException e) {
             return;
         }
-        log.info("{}", World.Instance.getBlockAt(new Vector3d(x, y, z)));
+        log.info("{}", BlockStateParser.Instance.parseStateId(World.Instance.getBlockAt(new Vector3d(x, y, z))));
     }
 }
