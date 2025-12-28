@@ -16,10 +16,6 @@ public class MovementController {
     private ScheduledFuture<?> currentStopFuture = null;
     private Movement currentMovement = null;
 
-    public final static MovementController Instance = new MovementController();
-
-    private MovementController() {}
-
     public void addMovement(Movement movement) {
         movements.add(movement);
         tryExecuteNext();

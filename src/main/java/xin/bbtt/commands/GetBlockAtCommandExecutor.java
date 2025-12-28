@@ -4,9 +4,9 @@ import org.joml.Vector3d;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xin.bbtt.Block.BlockStateParser;
+import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.command.Command;
 import xin.bbtt.mcbot.command.CommandExecutor;
-import xin.bbtt.world.World;
 
 public class GetBlockAtCommandExecutor extends CommandExecutor {
     private static final Logger log = LoggerFactory.getLogger(GetBlockAtCommandExecutor.class.getSimpleName());
@@ -25,6 +25,6 @@ public class GetBlockAtCommandExecutor extends CommandExecutor {
         } catch (NumberFormatException e) {
             return;
         }
-        log.info("{}", BlockStateParser.Instance.parseStateId(World.Instance.getBlockAt(new Vector3d(x, y, z))));
+        log.info("{}", BlockStateParser.Instance.parseStateId(MovementSync.Instance.getWorld().getBlockAt(new Vector3d(x, y, z))));
     }
 }

@@ -6,7 +6,6 @@ import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.Bot;
 import xin.bbtt.mcbot.Server;
 import xin.bbtt.world.Direction;
-import xin.bbtt.world.World;
 
 import static xin.bbtt.MovementSync.gravitationalAcceleration;
 import static xin.bbtt.MovementSync.terminalVelocity;
@@ -32,7 +31,7 @@ public class updateMotionTask implements Runnable {
 
     public static void checkOnGround() {
         Vector3d position = new Vector3d(MovementSync.Instance.position.get());
-        MovementSync.Instance.onGround.set(World.Instance.isOnGround(position));
+        MovementSync.Instance.onGround.set(MovementSync.Instance.getWorld().isOnGround(position));
     }
 
     @Override
@@ -61,7 +60,7 @@ public class updateMotionTask implements Runnable {
         lowest.y = Math.ceil(position.y);
 
         if (!MovementSync.Instance.onGround.get()) {
-            while (!World.Instance.isOnGround(lowest))
+            while (!MovementSync.Instance.getWorld().isOnGround(lowest))
                 lowest.add(Direction.DOWN.getUnitVector());
         }
 
