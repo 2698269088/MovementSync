@@ -26,8 +26,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class World {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    public final static World Instance = new World();
-    private World() {}
     private final Map<Integer, Map<Integer, Map<Integer, ChunkSection>>> chunks = new ConcurrentHashMap<>();
     private final Map<Integer, Entity> entities = new ConcurrentHashMap<>();
 

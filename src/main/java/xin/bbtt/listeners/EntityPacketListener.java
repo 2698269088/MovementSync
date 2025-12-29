@@ -2,40 +2,40 @@ package xin.bbtt.listeners;
 
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.*;
 import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.spawn.ClientboundAddEntityPacket;
+import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.event.EventHandler;
 import xin.bbtt.mcbot.event.Listener;
 import xin.bbtt.mcbot.events.ReceivePacketEvent;
-import xin.bbtt.world.World;
 
 public class EntityPacketListener implements Listener {
 
     @EventHandler
     public void OnAddEntities(ReceivePacketEvent<ClientboundAddEntityPacket> receivePacketEvent) {
-        World.Instance.handleAddEntityPacket(receivePacketEvent.getPacket());
+        MovementSync.Instance.getWorld().handleAddEntityPacket(receivePacketEvent.getPacket());
     }
 
     @EventHandler
     public void OnMoveEntityPosition(ReceivePacketEvent<ClientboundMoveEntityPosPacket> receivePacketEvent) {
-        World.Instance.handleMoveEntityPosPacket(receivePacketEvent.getPacket());
+        MovementSync.Instance.getWorld().handleMoveEntityPosPacket(receivePacketEvent.getPacket());
     }
 
     @EventHandler
     public void OnMoveEntityRotation(ReceivePacketEvent<ClientboundMoveEntityRotPacket> receivePacketEvent) {
-        World.Instance.handleMoveEntityRotPacket(receivePacketEvent.getPacket());
+        MovementSync.Instance.getWorld().handleMoveEntityRotPacket(receivePacketEvent.getPacket());
     }
 
     @EventHandler
     public void OnMoveEntityPositronRotation(ReceivePacketEvent<ClientboundMoveEntityPosRotPacket> receivePacketEvent) {
-        World.Instance.handleMoveEntityPosRotPacket(receivePacketEvent.getPacket());
+        MovementSync.Instance.getWorld().handleMoveEntityPosRotPacket(receivePacketEvent.getPacket());
     }
 
     @EventHandler
     public void OnMoveEntityRotateHead(ReceivePacketEvent<ClientboundRotateHeadPacket> receivePacketEvent) {
-        World.Instance.handleRotateHeadPacket(receivePacketEvent.getPacket());
+        MovementSync.Instance.getWorld().handleRotateHeadPacket(receivePacketEvent.getPacket());
     }
 
     @EventHandler
     public void OnRemoveEntity(ReceivePacketEvent<ClientboundRemoveEntitiesPacket> receivePacketEvent) {
-        World.Instance.handleRemoveEntitiesPacket(receivePacketEvent.getPacket());
+        MovementSync.Instance.getWorld().handleRemoveEntitiesPacket(receivePacketEvent.getPacket());
     }
 }

@@ -9,7 +9,6 @@ import org.joml.Vector3d;
 import xin.bbtt.MovementSync;
 import xin.bbtt.events.TeleportEvent;
 import xin.bbtt.mcbot.Bot;
-import xin.bbtt.movement.MovementController;
 
 import static xin.bbtt.tasks.updateMotionTask.checkOnGround;
 
@@ -25,7 +24,7 @@ public class TeleportPacketListener extends SessionAdapter {
         MovementSync.Instance.pitch.set(playerPositionPacket.getPitch());
         MovementSync.Instance.yaw.set(playerPositionPacket.getYaw());
         session.send(new ServerboundAcceptTeleportationPacket(playerPositionPacket.getTeleportId()));
-        MovementController.Instance.cancelAll();
+        MovementSync.Instance.movementController.cancelAll();
         MovementSync.Instance.velocity.set(new Vector3d());
         checkOnGround();
     }

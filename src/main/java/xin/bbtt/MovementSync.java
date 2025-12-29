@@ -1,5 +1,6 @@
 package xin.bbtt;
 
+import lombok.Getter;
 import org.joml.Vector3d;
 import xin.bbtt.commands.*;
 import xin.bbtt.listeners.*;
@@ -10,6 +11,7 @@ import xin.bbtt.movements.JumpMovement;
 import xin.bbtt.movements.LookAtMovement;
 import xin.bbtt.tasks.updateMotionTask;
 import xin.bbtt.world.Direction;
+import xin.bbtt.world.World;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,6 +32,10 @@ public class MovementSync implements Plugin {
     public AtomicBoolean onGround = new AtomicBoolean(true);
     private ScheduledExecutorService physicalSimulationService;
     public ScheduledExecutorService movementService;
+    @Getter
+    public final World world = new World();
+    @Getter
+    public final MovementController movementController = new MovementController();
 
     public MovementSync() {
         Instance = this;
@@ -80,11 +86,11 @@ public class MovementSync implements Plugin {
     }
 
     public void jump() {
-        MovementController.Instance.addMovement(new JumpMovement());
+        getMovementController().addMovement(new JumpMovement());
     }
 
     public void lookAt(Vector3d target) {
-        MovementController.Instance.addMovement(new LookAtMovement(target));
+        getMovementController().addMovement(new LookAtMovement(target));
     }
 
     public Vector3d getHeadPosition() {

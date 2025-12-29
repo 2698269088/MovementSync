@@ -4,7 +4,6 @@ import org.joml.Vector3d;
 import xin.bbtt.MovementSync;
 import xin.bbtt.mcbot.command.Command;
 import xin.bbtt.mcbot.command.TabExecutor;
-import xin.bbtt.movement.MovementController;
 import xin.bbtt.movements.WalkMovement;
 import xin.bbtt.world.Direction;
 
@@ -42,7 +41,7 @@ public class WalkCommandExecutor extends TabExecutor {
             }
         }
         long time = Integer.parseInt(args[1]);
-        MovementController.Instance.addMovement(new WalkMovement(velocity, time));
+        MovementSync.Instance.movementController.addMovement(new WalkMovement(velocity, time));
     }
 
     @Override
