@@ -5,6 +5,7 @@ import xin.bbtt.tasks.MovementTask;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,6 +47,7 @@ public class MovementController {
     }
 
 
+    @SuppressWarnings("unused")
     public boolean hasMovement() {
         return !movements.isEmpty();
     }
@@ -62,6 +64,10 @@ public class MovementController {
         if (currentMovement == null) {
             isExecuting.set(false);
             return;
+        }
+
+        if (MovementSync.Instance.movementService == null) {
+            MovementSync.Instance.movementService = Executors.newScheduledThreadPool(1);
         }
 
         try {
