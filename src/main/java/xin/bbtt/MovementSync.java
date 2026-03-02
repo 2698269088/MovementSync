@@ -1,0 +1,126 @@
+package xin.bbtt;
+
+import lombok.Getter;
+import org.joml.Vector3d;
+import xin.bbtt.commands.*;
+import xin.bbtt.listeners.*;
+import xin.bbtt.mcbot.Bot;
+import xin.bbtt.mcbot.plugin.Plugin;
+import xin.bbtt.movement.MovementController;
+import xin.bbtt.movements.JumpMovement;
+import xin.bbtt.movements.LookAtMovement;
+import xin.bbtt.tasks.VanillaPhysicsTask;
+import xin.bbtt.world.Direction;
+import xin.bbtt.world.World;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
+public class MovementSync implements Plugin {
+    public static MovementSync Instance;
+    public int entityId = -1;
+    public AtomicReference<Vector3d> position = new AtomicReference<>();
+    public AtomicReference<Vector3d> velocity = new AtomicReference<>();
+    public AtomicReference<Float> pitch = new AtomicReference<>();
+    public AtomicReference<Float> yaw = new AtomicReference<>();
+    public static final Vector3d gravitationalAcceleration = new Vector3d(0, -0.08, 0);
+    public static final double terminalVelocity = -3.92;
+    public static final double movementSpeed = 0.2159;
+    public AtomicBoolean onGround = new AtomicBoolean(true);
+    private ScheduledExecutorService physicalSimulationService;
+    public ScheduledExecutorService movementService;
+    private VanillaPhysicsTask physicsTask;
+    @Getter
+    public final World world = new World();
+    @Getter
+    public final MovementController movementController = new MovementController();
+
+    public MovementSync() {
+        Instance = this;
+    }
+
+    @Override
+    public String getVersion() {
+        return "1.3";
+    }
+
+    @Override
+    public void onLoad() {
+        getLogger().info("Loading MovementSync");
+    }
+
+    @Override
+    public void onUnload() {
+        getLogger().info("Unloading MovementSync");
+    }
+
+    @Override
+    public void onEnable() {
+        getLogger().info("Enabling MovementSync");
+        position.set(new Vector3d(0, 0, 0));
+        velocity.set(new Vector3d(0, 0, 0));
+        pitch.set(0f);
+        yaw.set(0f);
+
+        Bot.Instance.addPacketListener(new TeleportPacketListener(), this);
+        Bot.Instance.addPacketListener(new EntityIdRecorder(), this);
+        Bot.Instance.addPacketListener(new RespawnPacketListener(), this);
+        Bot.Instance.addPacketListener(new ChunkDataListener(), this);
+
+        Bot.Instance.getPluginManager().registerCommand(new WhereAmICommand(), new WhereAmICommandExecutor(),  this);
+        Bot.Instance.getPluginManager().registerCommand(new JumpCommand(), new JumpCommandExecutor(),  this);
+        Bot.Instance.getPluginManager().registerCommand(new GetBlockAtCommand(), new GetBlockAtCommandExecutor(), this);
+        Bot.Instance.getPluginManager().registerCommand(new WalkCommand(), new WalkCommandExecutor(), this);
+        Bot.Instance.getPluginManager().registerCommand(new LookAtCommand(), new LookAtCommandExecutor(), this);
+
+        Bot.Instance.getPluginManager().events().registerEvents(new ServerChangeListener(),  this);
+        Bot.Instance.getPluginManager().events().registerEvents(new EntityPacketListener(), this);
+
+        // 初始化物理任务
+        physicsTask = new VanillaPhysicsTask();
+        
+        // 启动物理模拟服务 - 更安全的初始化
+        physicalSimulationService = Executors.newScheduledThreadPool(1);
+        physicalSimulationService.scheduleAtFixedRate(physicsTask, 0, 50, TimeUnit.MILLISECONDS);
+        
+        movementService = Executors.newScheduledThreadPool(1);
+    }
+
+    @Override
+    public void onDisable() {
+        getLogger().info("Disabling MovementSync");
+        physicalSimulationService.shutdown();
+        movementService.shutdown();
+    }
+
+    public void jump() {
+        // 添加空值检查以防止空指针异常
+        if (Instance != null && movementController != null) {
+            movementController.addMovement(new JumpMovement());
+        }
+        
+        // 同时触发物理跳跃
+        if (physicsTask != null) {
+            VanillaPhysicsTask.jump();
+        }
+    }
+
+    public void lookAt(Vector3d target) {
+        // 添加空值检查
+        if (Instance != null && movementController != null) {
+            movementController.addMovement(new LookAtMovement(target));
+        }
+    }
+
+    public Vector3d getHeadPosition() {
+        // 添加空值检查
+        if (Instance != null && Instance.position.get() != null) {
+            return new Vector3d(Instance.position.get())
+                    .add(Direction.UP.getVector(1.62));
+        }
+        return new Vector3d(0, 1.62, 0); // 安全默认值
+    }
+}

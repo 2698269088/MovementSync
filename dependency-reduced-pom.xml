@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>xin.bbtt</groupId>
   <artifactId>MovementSync</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.3-DEV</version>
   <build>
     <plugins>
       <plugin>
@@ -26,7 +26,16 @@
             </goals>
             <configuration>
               <finalName>${project.artifactId}-${project.version}</finalName>
-              <transformers />
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
             </configuration>
           </execution>
         </executions>
