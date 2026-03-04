@@ -28,11 +28,12 @@ public class MovementSync implements Plugin {
     public AtomicReference<Float> yaw = new AtomicReference<>();
     public static final Vector3d gravitationalAcceleration = new Vector3d(0, -0.08, 0);
     public static final double terminalVelocity = -3.92;
-    public static final double movementSpeed = 0.2159;
+    // 使用更标准的移动速度值，接近原版MC玩家步行速度
+    public static final double movementSpeed = 0.285;
     public AtomicBoolean onGround = new AtomicBoolean(true);
     private ScheduledExecutorService physicalSimulationService;
     public ScheduledExecutorService movementService;
-    private VanillaPhysicsTask physicsTask;
+    public VanillaPhysicsTask physicsTask;
     @Getter
     public final World world = new World();
     @Getter
@@ -44,7 +45,7 @@ public class MovementSync implements Plugin {
 
     @Override
     public String getVersion() {
-        return "1.3";
+        return "1.3.1";
     }
 
     @Override
@@ -82,9 +83,10 @@ public class MovementSync implements Plugin {
         // 初始化物理任务
         physicsTask = new VanillaPhysicsTask();
         
-        // 启动物理模拟服务 - 更安全的初始化
+        // 启动物理模拟服务 - 使用原版MC标准频率
         physicalSimulationService = Executors.newScheduledThreadPool(1);
-        physicalSimulationService.scheduleAtFixedRate(physicsTask, 0, 50, TimeUnit.MILLISECONDS);
+        // 原版MC每tick更新，约50ms，但位置同步应该更低频率
+        physicalSimulationService.scheduleAtFixedRate(physicsTask, 0, 100, TimeUnit.MILLISECONDS);
         
         movementService = Executors.newScheduledThreadPool(1);
     }
@@ -122,5 +124,33 @@ public class MovementSync implements Plugin {
                     .add(Direction.UP.getVector(1.62));
         }
         return new Vector3d(0, 1.62, 0); // 安全默认值
+    }
+    
+    /**
+     * 启用自动跳跃功能
+     */
+    public void enableAutoJump() {
+        VanillaPhysicsTask.enableAutoJump();
+    }
+    
+    /**
+     * 禁用自动跳跃功能
+     */
+    public void disableAutoJump() {
+        VanillaPhysicsTask.disableAutoJump();
+    }
+    
+    /**
+     * 设置自动跳跃的目标方向
+     */
+    public void setAutoJumpDirection(Vector3d direction) {
+        VanillaPhysicsTask.setAutoJumpDirection(direction);
+    }
+    
+    /**
+     * 检查自动跳跃是否启用
+     */
+    public boolean isAutoJumpEnabled() {
+        return VanillaPhysicsTask.isAutoJumpEnabled();
     }
 }
