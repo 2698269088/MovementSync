@@ -70,16 +70,6 @@ public class WalkMovement extends Movement {
                         MovementSync.Instance.pitch.get()
                     );
                     Bot.Instance.getSession().send(packet);
-                    
-                    // 每 10 tick 输出一次调试信息
-                    if (elapsed % 500 == 0 && MovementSync.Instance.getLogger().isDebugEnabled()) {
-                        MovementSync.Instance.getLogger().debug(
-                            String.format("WalkMovement - 已发送位置更新：%.4f, %.4f, %.4f | 速度：%.4f, %.4f, %.4f",
-                                pos.x, pos.y, pos.z,
-                                velocity.x, velocity.y, velocity.z
-                            )
-                        );
-                    }
                 }
             } catch (Exception e) {
                 MovementSync.Instance.getLogger().error("Failed to send position packet", e);

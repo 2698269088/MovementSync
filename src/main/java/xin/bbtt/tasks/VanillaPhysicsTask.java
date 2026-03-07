@@ -146,45 +146,10 @@ public class VanillaPhysicsTask implements Runnable {
         // 执行自动跳跃检查
         autoJumpHandler.checkAndJump();
         
-        // 同步到服务器 - 添加更详细的调试日志
-        boolean shouldSync = shouldSyncToServer();
-        if (shouldSync) {
-            MovementSync.Instance.getLogger().info(
-                String.format("同步位置到服务器 - 位置：%.4f, %.4f, %.4f | 角度：yaw=%.2f, pitch=%.2f",
-                    newPosition.x, newPosition.y, newPosition.z,
-                    MovementSync.Instance.yaw.get(), MovementSync.Instance.pitch.get()
-                )
-            );
+        // 同步到服务器
+        if (shouldSyncToServer()) {
             syncPositionToServer();
             updateLastSyncState();
-        } else {
-            // 添加调试信息，了解为什么不满足同步条件
-            if (MovementSync.Instance.getLogger().isDebugEnabled()) {
-                double posChange = lastPos.distance(newPosition);
-                float pitchChange = Math.abs(lastPitch - MovementSync.Instance.pitch.get());
-                float yawChange = Math.abs(lastYaw - MovementSync.Instance.yaw.get());
-                Vector3d currentVel = MovementSync.Instance.velocity.get();
-                double verticalVelChange = Math.abs(currentVel.y - lastVelocityY);
-                
-                MovementSync.Instance.getLogger().debug(
-                    String.format("不满足同步条件 - 位置变化：%.6f (需>0.01) | 角度变化：%.2f (需>1.0) | 垂直速度变化：%.6f (需>0.05) | 地面状态：%s",
-                        posChange, 
-                        Math.max(pitchChange, yawChange),
-                        verticalVelChange,
-                        MovementSync.Instance.onGround.get() ? "是" : "否"
-                    )
-                );
-            }
-        }
-        
-        // 调试信息
-        if (MovementSync.Instance.getLogger().isDebugEnabled()) {
-            MovementSync.Instance.getLogger().debug(
-                "Physics - onGround:{}, velY:{}, posY:{}, collidingY:{}, AABB:{}",
-                isOnGround, String.format("%.4f", velocity.y), 
-                String.format("%.4f", newPosition.y), isCollidingY,
-                AABB.playerBoundingBox(newPosition).toString()
-            );
         }
     }
     

@@ -38,7 +38,6 @@ public class MovementSync implements Plugin {
     public final World world = new World();
     @Getter
     public final MovementController movementController = new MovementController();
-    private MovementPacketLogger movementPacketLogger;
 
     public MovementSync() {
         Instance = this;
@@ -71,17 +70,12 @@ public class MovementSync implements Plugin {
         Bot.Instance.addPacketListener(new EntityIdRecorder(), this);
         Bot.Instance.addPacketListener(new RespawnPacketListener(), this);
         Bot.Instance.addPacketListener(new ChunkDataListener(), this);
-        
-        // 添加移动包调试监听器
-        movementPacketLogger = new MovementPacketLogger();
-        Bot.Instance.getSession().addListener(movementPacketLogger);
 
         Bot.Instance.getPluginManager().registerCommand(new WhereAmICommand(), new WhereAmICommandExecutor(),  this);
         Bot.Instance.getPluginManager().registerCommand(new JumpCommand(), new JumpCommandExecutor(),  this);
         Bot.Instance.getPluginManager().registerCommand(new GetBlockAtCommand(), new GetBlockAtCommandExecutor(), this);
         Bot.Instance.getPluginManager().registerCommand(new WalkCommand(), new WalkCommandExecutor(), this);
         Bot.Instance.getPluginManager().registerCommand(new LookAtCommand(), new LookAtCommandExecutor(), this);
-        Bot.Instance.getPluginManager().registerCommand(new TestMoveCommand(), new TestMoveCommandExecutor(),  this);
 
         Bot.Instance.getPluginManager().events().registerEvents(new ServerChangeListener(),  this);
         Bot.Instance.getPluginManager().events().registerEvents(new EntityPacketListener(), this);
@@ -102,11 +96,6 @@ public class MovementSync implements Plugin {
         getLogger().info("Disabling MovementSync");
         physicalSimulationService.shutdown();
         movementService.shutdown();
-        
-        // 移除监听器
-        if (movementPacketLogger != null && Bot.Instance != null && Bot.Instance.getSession() != null) {
-            Bot.Instance.getSession().removeListener(movementPacketLogger);
-        }
     }
 
     public void jump() {
