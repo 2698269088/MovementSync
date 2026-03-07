@@ -49,7 +49,7 @@ public class VanillaPhysicsTask implements Runnable {
         }
         
         if (!Bot.Instance.isRunning()) return;
-        if (Bot.Instance.getServer() != Server.Xin) return;
+        // 移除 Xin 服务器限制，允许在任何服务器上运行物理模拟
         
         // 延迟初始化
         if (!isInitialized.get() && MovementSync.Instance.world != null) {
@@ -61,6 +61,20 @@ public class VanillaPhysicsTask implements Runnable {
             updatePhysics();
         } catch (Exception e) {
             MovementSync.Instance.getLogger().error("Physics update failed", e);
+        }
+        
+        // 每 10 秒输出一次调试信息
+        if (System.currentTimeMillis() % 10000 < 100) {
+            MovementSync.Instance.getLogger().debug(
+                String.format("物理模拟运行中 - 位置：%.4f, %.4f, %.4f | 速度：%.4f, %.4f, %.4f",
+                    MovementSync.Instance.position.get().x,
+                    MovementSync.Instance.position.get().y,
+                    MovementSync.Instance.position.get().z,
+                    MovementSync.Instance.velocity.get().x,
+                    MovementSync.Instance.velocity.get().y,
+                    MovementSync.Instance.velocity.get().z
+                )
+            );
         }
     }
     
@@ -132,10 +146,35 @@ public class VanillaPhysicsTask implements Runnable {
         // 执行自动跳跃检查
         autoJumpHandler.checkAndJump();
         
-        // 同步到服务器
-        if (shouldSyncToServer()) {
+        // 同步到服务器 - 添加更详细的调试日志
+        boolean shouldSync = shouldSyncToServer();
+        if (shouldSync) {
+            MovementSync.Instance.getLogger().info(
+                String.format("同步位置到服务器 - 位置：%.4f, %.4f, %.4f | 角度：yaw=%.2f, pitch=%.2f",
+                    newPosition.x, newPosition.y, newPosition.z,
+                    MovementSync.Instance.yaw.get(), MovementSync.Instance.pitch.get()
+                )
+            );
             syncPositionToServer();
             updateLastSyncState();
+        } else {
+            // 添加调试信息，了解为什么不满足同步条件
+            if (MovementSync.Instance.getLogger().isDebugEnabled()) {
+                double posChange = lastPos.distance(newPosition);
+                float pitchChange = Math.abs(lastPitch - MovementSync.Instance.pitch.get());
+                float yawChange = Math.abs(lastYaw - MovementSync.Instance.yaw.get());
+                Vector3d currentVel = MovementSync.Instance.velocity.get();
+                double verticalVelChange = Math.abs(currentVel.y - lastVelocityY);
+                
+                MovementSync.Instance.getLogger().debug(
+                    String.format("不满足同步条件 - 位置变化：%.6f (需>0.01) | 角度变化：%.2f (需>1.0) | 垂直速度变化：%.6f (需>0.05) | 地面状态：%s",
+                        posChange, 
+                        Math.max(pitchChange, yawChange),
+                        verticalVelChange,
+                        MovementSync.Instance.onGround.get() ? "是" : "否"
+                    )
+                );
+            }
         }
         
         // 调试信息
@@ -336,55 +375,71 @@ public class VanillaPhysicsTask implements Runnable {
     }
     
     /**
-     * 原版风格的地面检测 - 使用AABB进行精确检测
-     * 移植自原版MC的地面检测逻辑
+     * 原版风格的地面检测 - 使用 AABB 进行精确检测
+     * 移植自原版 MC 的地面检测逻辑
      */
     private boolean checkOnGround() {
         try {
             Vector3d currentPosition = MovementSync.Instance.position.get();
+                
             // 创建玩家碰撞箱
             AABB playerBox = AABB.playerBoundingBox(currentPosition);
-            
-            // 地面检测：检查碰撞箱下方0.05个单位的方块
-            AABB groundCheckBox = playerBox.move(0, -0.05, 0);
-            
+                
+            // 关键修复：检查玩家碰撞箱底部是否与下方方块相交
+            // 向下膨胀 0.05 单位来检测地面接触
+            AABB feetBox = playerBox.deflate(0.01).move(0, -0.05, 0);
+                
             // 计算需要检查的方块范围
-            int minX = (int) Math.floor(groundCheckBox.minX);
-            int minY = (int) Math.floor(groundCheckBox.minY);
-            int minZ = (int) Math.floor(groundCheckBox.minZ);
-            int maxX = (int) Math.floor(groundCheckBox.maxX);
-            int maxY = (int) Math.floor(groundCheckBox.maxY);
-            int maxZ = (int) Math.floor(groundCheckBox.maxZ);
-            
+            int minX = (int) Math.floor(feetBox.minX);
+            int minY = (int) Math.floor(feetBox.minY);
+            int minZ = (int) Math.floor(feetBox.minZ);
+            int maxX = (int) Math.ceil(feetBox.maxX);
+            int maxY = (int) Math.ceil(feetBox.maxY);
+            int maxZ = (int) Math.ceil(feetBox.maxZ);
+                
             // 检查每个可能的地面方块
             for (int x = minX; x <= maxX; x++) {
                 for (int z = minZ; z <= maxZ; z++) {
-                    // 只检查Y轴范围内的方块
                     for (int y = minY; y <= maxY; y++) {
                         Vector3d blockPos = new Vector3d(x, y, z);
+                            
+                        // 如果方块是实体方块
                         if (MovementSync.Instance.world.isOnGround(blockPos)) {
-                            return true;
+                            // 创建方块的 AABB
+                            AABB blockBox = AABB.ofBlock(x, y, z);
+                                
+                            // 精确检测：玩家脚部碰撞箱是否与方块相交
+                            if (feetBox.intersects(blockBox)) {
+                                return true;
+                            }
                         }
                     }
                 }
             }
-            
-            // 辅助检测：检查更下方的位置
-            AABB lowerCheckBox = playerBox.move(0, -0.1, 0);
-            int lowerMinY = (int) Math.floor(lowerCheckBox.minY);
-            int lowerMaxY = (int) Math.floor(lowerCheckBox.maxY);
-            
-            for (int x = minX; x <= maxX; x++) {
-                for (int z = minZ; z <= maxZ; z++) {
-                    for (int y = lowerMinY; y <= lowerMaxY; y++) {
-                        Vector3d blockPos = new Vector3d(x, y, z);
-                        if (MovementSync.Instance.world.isOnGround(blockPos)) {
-                            return true;
+                
+            // 辅助检测：检查更下方的位置（最多 0.5 个方块）
+            for (double offset = 0.1; offset <= 0.5; offset += 0.1) {
+                AABB lowerBox = playerBox.deflate(0.01).move(0, -offset, 0);
+                    
+                int lowerMinY = (int) Math.floor(lowerBox.minY);
+                int lowerMaxY = (int) Math.ceil(lowerBox.maxY);
+                    
+                for (int x = minX; x <= maxX; x++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        for (int y = lowerMinY; y <= lowerMaxY; y++) {
+                            Vector3d blockPos = new Vector3d(x, y, z);
+                                
+                            if (MovementSync.Instance.world.isOnGround(blockPos)) {
+                                AABB blockBox = AABB.ofBlock(x, y, z);
+                                if (lowerBox.intersects(blockBox)) {
+                                    return true;
+                                }
+                            }
                         }
                     }
                 }
             }
-            
+                
             return false;
         } catch (Exception e) {
             return true; // 安全默认值
@@ -393,7 +448,7 @@ public class VanillaPhysicsTask implements Runnable {
     
     /**
      * 判断是否需要同步到服务器 - 原版风格的同步条件
-     * 参考原版MC的同步策略，避免过度频繁的同步
+     * 参考原版 MC 的同步策略，避免过度频繁的同步
      */
     private boolean shouldSyncToServer() {
         try {
@@ -403,45 +458,45 @@ public class VanillaPhysicsTask implements Runnable {
                 MovementSync.Instance.yaw == null) {
                 return false;
             }
-            
+                
             Vector3d currentPos = MovementSync.Instance.position.get();
             Float pitchObj = MovementSync.Instance.pitch.get();
             Float yawObj = MovementSync.Instance.yaw.get();
-            
+                
             if (currentPos == null || pitchObj == null || yawObj == null) {
                 return false;
             }
-            
+                
             float currentPitch = pitchObj;
             float currentYaw = yawObj;
-            
+                
             // 计算变化量
             double posChange = lastPos.distance(currentPos);
             float pitchChange = Math.abs(lastPitch - currentPitch);
             float yawChange = Math.abs(lastYaw - currentYaw);
-            
-            // 原版MC同步条件：
-            // 1. 位置变化超过一定阈值 (约0.01个方块)
-            // 2. 角度变化超过一定阈值 (约1度)
+                
+            // 原版 MC 同步条件：
+            // 1. 位置变化超过一定阈值 (约 0.01 个方块)
+            // 2. 角度变化超过一定阈值 (约 1 度)
             // 3. 接地状态发生变化
             // 4. 垂直速度发生显著变化
             boolean significantPositionChange = posChange > 0.01;
             boolean significantRotationChange = pitchChange > 1.0f || yawChange > 1.0f;
             boolean groundStateChanged = wasOnGround != MovementSync.Instance.onGround.get();
-            
+                
             Vector3d currentVel = MovementSync.Instance.velocity.get();
             double verticalVelChange = Math.abs(currentVel.y - lastVelocityY);
             boolean significantVerticalChange = verticalVelChange > 0.05;
-            
-            boolean shouldSync = (significantPositionChange || 
-                                 significantRotationChange || 
-                                 groundStateChanged || 
-                                 significantVerticalChange) && 
-                                 Bot.Instance.getServer() == Server.Xin;
-            
+                
+            // 移除 Xin 服务器限制，允许在任何服务器上同步
+            boolean shouldSync = significantPositionChange || 
+                               significantRotationChange || 
+                               groundStateChanged || 
+                               significantVerticalChange;
+                
             // 更新上一帧的速度记录
             lastVelocityY = currentVel.y;
-            
+                
             return shouldSync;
         } catch (Exception e) {
             return false;
